@@ -1,4 +1,4 @@
--- UniHub Sistem Ayarları Tablosu Oluşturma
+-- Kulüpi Sistem Ayarları Tablosu Oluşturma
 -- Bu script, sistem ayarlarını yönetmek için gerekli tabloyu oluşturur
 
 -- app_config tablosu oluştur
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.app_config (
     email_confirmation_expiry_hours INTEGER DEFAULT 24,
     max_file_size_mb INTEGER DEFAULT 10,
     allowed_file_types TEXT DEFAULT 'jpg,jpeg,png,pdf,doc,docx',
-    app_name TEXT DEFAULT 'UniHub',
+    app_name TEXT DEFAULT 'Kulüpi',
     app_description TEXT DEFAULT 'Üniversite öğrencileri için sosyal platform',
     maintenance_mode BOOLEAN DEFAULT false,
     email_verification_required BOOLEAN DEFAULT true,
@@ -36,7 +36,7 @@ INSERT INTO public.app_config (
     24,
     10,
     'jpg,jpeg,png,pdf,doc,docx',
-    'UniHub',
+    'Kulüpi',
     'Üniversite öğrencileri için sosyal platform',
     false,
     true,

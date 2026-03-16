@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:unihub/services/notification_service.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/services/notification_service.dart';
+import 'package:kulupi/utils/glass_components.dart';
 import 'package:intl/intl.dart';
 
 class NotificationBell extends StatefulWidget {
@@ -33,6 +33,9 @@ class _NotificationBellState extends State<NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color iconColor = isDark ? Colors.white : const Color(0xFF1F2937);
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _notificationsStream,
       initialData: const [],
@@ -56,9 +59,9 @@ class _NotificationBellState extends State<NotificationBell> {
           onTap: () => _showNotificationsDialog(),
           child: Stack(
             children: [
-              const Icon(
+              Icon(
                 Icons.notifications_outlined,
-                color: Colors.white,
+                color: iconColor,
                 size: 28,
               ),
               if (_unreadCount > 0)
@@ -70,7 +73,7 @@ class _NotificationBellState extends State<NotificationBell> {
                     decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1),
+                      border: Border.all(color: isDark ? Colors.white : Colors.white, width: 1),
                     ),
                     child: Text(
                       _unreadCount > 9 ? '9+' : _unreadCount.toString(),

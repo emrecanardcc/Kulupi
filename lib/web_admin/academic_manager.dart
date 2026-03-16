@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/models/university.dart';
-import 'package:unihub/models/faculty.dart';
-import 'package:unihub/models/department.dart';
+import 'package:kulupi/models/university.dart';
+import 'package:kulupi/models/faculty.dart';
+import 'package:kulupi/models/department.dart';
+import 'package:kulupi/web_admin/university_manager.dart';
 
 class AcademicManager extends StatefulWidget {
   const AcademicManager({super.key});
@@ -179,129 +180,182 @@ class _AcademicManagerState extends State<AcademicManager> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        // Sol Panel: Üniversiteler
-        Expanded(
-          flex: 2,
-          child: Column(
+        // Üst navigasyon butonları
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: Colors.black26,
-                child: const Text("1. Üniversite Seç", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _universities.length,
-                  itemBuilder: (context, index) {
-                    final uni = _universities[index];
-                    final isSelected = _selectedUniversity?.id == uni.id;
-                    return ListTile(
-                      title: Text(uni.name, style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white)),
-                      selected: isSelected,
-                      selectedTileColor: Colors.white10,
-                      onTap: () {
-                        setState(() {
-                          _selectedUniversity = uni;
-                          _loadFaculties(uni.id);
-                        });
-                      },
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UniversityManager(),
+                      ),
                     );
                   },
+                  icon: const Icon(Icons.school),
+                  label: const Text("Üniversiteler"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.account_tree),
+                  label: const Text("Akademik Yapı"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.cyanAccent.withValues(alpha: 0.2),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        
-        // Orta Panel: Fakülteler
         Expanded(
-          flex: 3,
-          child: Container(
-            decoration: BoxDecoration(border: Border.symmetric(vertical: BorderSide(color: Colors.white10))),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.black26,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("2. Fakülteler", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                      IconButton(
-                        icon: const Icon(Icons.add, color: Colors.cyanAccent),
-                        onPressed: _selectedUniversity == null ? null : _addFaculty,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: _selectedUniversity == null 
-                    ? const Center(child: Text("Önce Üniversite Seçin", style: TextStyle(color: Colors.white54)))
-                    : ListView.builder(
-                        itemCount: _faculties.length,
+          child: Row(
+            children: [
+              // Sol Panel: Üniversiteler
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.black26,
+                      child: const Text("1. Üniversite Seç", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _universities.length,
                         itemBuilder: (context, index) {
-                          final faculty = _faculties[index];
-                          final isSelected = _selectedFaculty?.id == faculty.id;
+                          final uni = _universities[index];
+                          final isSelected = _selectedUniversity?.id == uni.id;
                           return ListTile(
-                            title: Text(faculty.name, style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white)),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                              onPressed: () => _deleteFaculty(faculty.id),
-                            ),
+                            title: Text(uni.name, style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white)),
                             selected: isSelected,
                             selectedTileColor: Colors.white10,
                             onTap: () {
                               setState(() {
-                                _selectedFaculty = faculty;
-                                _loadDepartments(faculty.id);
+                                _selectedUniversity = uni;
+                                _loadFaculties(uni.id);
                               });
                             },
                           );
                         },
                       ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Sağ Panel: Bölümler
-        Expanded(
-          flex: 3,
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: Colors.black26,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("3. Bölümler", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    IconButton(
-                      icon: const Icon(Icons.add, color: Colors.cyanAccent),
-                      onPressed: _selectedFaculty == null ? null : _addDepartment,
                     ),
                   ],
                 ),
               ),
+        
+              // Orta Panel: Fakülteler
               Expanded(
-                child: _selectedFaculty == null 
-                  ? const Center(child: Text("Önce Fakülte Seçin", style: TextStyle(color: Colors.white54)))
-                  : ListView.builder(
-                      itemCount: _departments.length,
-                      itemBuilder: (context, index) {
-                        final dept = _departments[index];
-                        return ListTile(
-                          title: Text(dept.name, style: const TextStyle(color: Colors.white)),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                            onPressed: () => _deleteDepartment(dept.id),
+                flex: 3,
+                child: Container(
+                  decoration: BoxDecoration(border: Border.symmetric(vertical: BorderSide(color: Colors.white10))),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        color: Colors.black26,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("2. Fakülteler", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            IconButton(
+                              icon: const Icon(Icons.add, color: Colors.cyanAccent),
+                              onPressed: _selectedUniversity == null ? null : _addFaculty,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: _selectedUniversity == null 
+                          ? const Center(child: Text("Önce Üniversite Seçin", style: TextStyle(color: Colors.white54)))
+                          : ListView.builder(
+                              itemCount: _faculties.length,
+                              itemBuilder: (context, index) {
+                                final faculty = _faculties[index];
+                                final isSelected = _selectedFaculty?.id == faculty.id;
+                                return ListTile(
+                                  title: Text(faculty.name, style: TextStyle(color: isSelected ? Colors.cyanAccent : Colors.white)),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                    onPressed: () => _deleteFaculty(faculty.id),
+                                  ),
+                                  selected: isSelected,
+                                  selectedTileColor: Colors.white10,
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedFaculty = faculty;
+                                      _loadDepartments(faculty.id);
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Sağ Panel: Bölümler
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.black26,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("3. Bölümler", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(Icons.add, color: Colors.cyanAccent),
+                            onPressed: _selectedFaculty == null ? null : _addDepartment,
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
+                    Expanded(
+                      child: _selectedFaculty == null 
+                        ? const Center(child: Text("Önce Fakülte Seçin", style: TextStyle(color: Colors.white54)))
+                        : ListView.builder(
+                            itemCount: _departments.length,
+                            itemBuilder: (context, index) {
+                              final dept = _departments[index];
+                              return ListTile(
+                                title: Text(dept.name, style: const TextStyle(color: Colors.white)),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                  onPressed: () => _deleteDepartment(dept.id),
+                                ),
+                              );
+                            },
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

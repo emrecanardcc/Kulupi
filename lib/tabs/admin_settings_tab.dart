@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/services/database_service.dart';
-import 'package:unihub/utils/hex_color.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/services/database_service.dart';
+import 'package:kulupi/utils/hex_color.dart';
+import 'package:kulupi/utils/glass_components.dart';
 
 class AdminSettingsTab extends StatefulWidget {
   final String kulupId;
@@ -104,9 +104,71 @@ class _AdminSettingsTabState extends State<AdminSettingsTab> {
     return path;
   }
 
+  Future<bool> _ensurePresident() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return false;
+    try {
+      final data = await Supabase.instance.client
+          .from('club_members')
+          .select('role')
+          .eq('club_id', widget.kulupId)
+          .eq('user_id', user.id)
+          .limit(1)
+          .single();
+      return data['role'] == 'baskan';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool _validateForm() {
+    final name = _clubNameController.text.trim();
+    final shortName = _shortNameController.text.trim();
+    final category = _categoryController.text.trim();
+    final desc = _clubDescController.text.trim();
+
+    if (name.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Kulüp adı en az 3 karakter olmalı"), backgroundColor: Colors.orange),
+      );
+      return false;
+    }
+    if (shortName.isEmpty || shortName.length < 2 || shortName.length > 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Kısaltma 2-8 karakter olmalı"), backgroundColor: Colors.orange),
+      );
+      return false;
+    }
+    if (category.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Kategori boş olamaz"), backgroundColor: Colors.orange),
+      );
+      return false;
+    }
+    if (desc.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Açıklama boş olamaz"), backgroundColor: Colors.orange),
+      );
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _saveSettings() async {
     setState(() => _isSaving = true);
     try {
+      final isPresident = await _ensurePresident();
+      if (!isPresident) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Yalnızca kulüp başkanı ayarları değiştirebilir"), backgroundColor: Colors.redAccent),
+          );
+        }
+        return;
+      }
+      if (!_validateForm()) {
+        return;
+      }
       String? logoPath = _logoPath;
       String? bannerPath = _bannerPath;
       if (_logoBytes != null) {

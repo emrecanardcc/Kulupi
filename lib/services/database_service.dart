@@ -155,6 +155,29 @@ class DatabaseService {
     return data['name'] as String?;
   }
 
+  // --- OPTIMIZED: Get club members with profiles in single query ---
+  Future<List<Map<String, dynamic>>> getClubMembersWithProfiles(int clubId) async {
+    final data = await _supabase
+        .from('club_members')
+        .select('*, profiles!inner(*)')
+        .eq('club_id', clubId)
+        .order('role', ascending: true)
+        .timeout(const Duration(seconds: 15));
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  // --- OPTIMIZED: Get pending requests with profiles in single query ---
+  Future<List<Map<String, dynamic>>> getPendingRequestsWithProfiles(int clubId) async {
+    final data = await _supabase
+        .from('club_members')
+        .select('*, profiles!inner(*)')
+        .eq('club_id', clubId)
+        .eq('status', MemberStatus.pending.toJson())
+        .order('joined_at', ascending: true)
+        .timeout(const Duration(seconds: 15));
+    return List<Map<String, dynamic>>.from(data);
+  }
+
   Future<List<Map<String, dynamic>>> getUserClubs(String userId) async {
     final data = await _supabase
         .from('club_members')

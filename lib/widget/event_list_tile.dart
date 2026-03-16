@@ -15,6 +15,9 @@ class EventListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color onSurface = Theme.of(context).colorScheme.onSurface;
+    final Color muted = onSurface.withValues(alpha: 0.7);
+
     return AuraGlassCard(
       margin: const EdgeInsets.only(bottom: 12),
       accentColor: themeColor,
@@ -23,17 +26,24 @@ class EventListTile extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: themeColor.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
+            color: themeColor.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.calendar_month, color: themeColor),
+          child: Icon(Icons.calendar_month_rounded, color: themeColor),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(
+          title, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            color: onSurface,
+            fontSize: 16,
+          ),
+        ),
         subtitle: Text(
           description,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: muted, fontSize: 14),
         ),
       ),
     );

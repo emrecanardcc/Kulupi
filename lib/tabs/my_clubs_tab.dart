@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/utils/hex_color.dart';
-import 'package:unihub/widget/sponsor_banner.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/tabs/club_detail_page.dart';
-import 'package:unihub/services/database_service.dart';
-import 'package:unihub/models/club.dart';
-import 'package:unihub/models/app_enums.dart';
-import 'package:unihub/widgets/aura_pull_to_refresh.dart';
-import 'package:unihub/widgets/staggered_item.dart';
+import 'package:kulupi/utils/hex_color.dart';
+import 'package:kulupi/widget/sponsor_banner.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/tabs/club_detail_page.dart';
+import 'package:kulupi/services/database_service.dart';
+import 'package:kulupi/models/club.dart';
+import 'package:kulupi/models/app_enums.dart';
+import 'package:kulupi/widgets/aura_pull_to_refresh.dart';
+import 'package:kulupi/widgets/staggered_item.dart';
 
 class MyClubsTab extends StatefulWidget {
   const MyClubsTab({super.key});
@@ -221,9 +221,10 @@ class _MyClubsTabState extends State<MyClubsTab> {
     bool isPending,
   ) {
     final String logoUrl = _dbService.getPublicUrl('clubs', club.logoPath);
+    final String bannerUrl = _dbService.getPublicUrl('clubs', club.bannerPath);
     final Color accentColor = isPending ? Colors.orange : color;
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: AuraGlassCard(
@@ -239,123 +240,154 @@ class _MyClubsTabState extends State<MyClubsTab> {
             ),
           );
         },
-        child: IntrinsicHeight(
-          child: Row(
+        child: SizedBox(
+          height: 170,
+          child: Stack(
             children: [
-              // Left Aura Strip
-              Container(
-                width: 8,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      accentColor,
-                      accentColor.withValues(alpha: 0.3),
-                    ],
+              if (bannerUrl.isNotEmpty)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: Image.network(
+                      bannerUrl,
+                      fit: BoxFit.cover,
+                      opacity: AlwaysStoppedAnimation(isDark ? 0.25 : 0.18),
+                    ),
                   ),
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(32)),
+                ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accentColor.withValues(alpha: isDark ? 0.10 : 0.08),
+                        Colors.black.withValues(alpha: isDark ? 0.25 : 0.12),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      // Logo with Glow
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: accentColor.withValues(alpha: 0.4),
-                            width: 2,
+              Positioned(
+                left: 20,
+                right: 20,
+                top: 18,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.25)),
+                      ),
+                      child: Text(
+                        club.category.toUpperCase(),
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (isPending ? Colors.orange : accentColor).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: (isPending ? Colors.orange : accentColor).withValues(alpha: 0.25)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isPending)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 6),
+                              child: Icon(Icons.hourglass_empty_rounded, size: 12, color: Colors.orange),
+                            ),
+                          Text(
+                            (isPending ? 'ONAY BEKLIYOR' : _getRoleLabel(role)).toUpperCase(),
+                            style: TextStyle(
+                              color: isPending ? Colors.orange : accentColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withValues(alpha: 0.2),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                            )
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: logoUrl.isNotEmpty
-                              ? Image.network(logoUrl, fit: BoxFit.cover)
-                              : Center(
-                                  child: Text(
-                                    club.shortName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      color: accentColor,
-                                      fontSize: 20,
-                                    ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 18,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 2),
+                        boxShadow: [
+                          BoxShadow(color: accentColor.withValues(alpha: 0.18), blurRadius: 14, spreadRadius: 2),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: logoUrl.isNotEmpty
+                            ? Image.network(logoUrl, fit: BoxFit.cover)
+                            : Center(
+                                child: Text(
+                                  club.shortName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: accentColor,
+                                    fontSize: 18,
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              club.name,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: onSurface,
-                                letterSpacing: 0.5,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: accentColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: accentColor.withValues(alpha: 0.2),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (isPending)
-                                        const Padding(
-                                          padding: EdgeInsets.only(right: 6),
-                                          child: Icon(Icons.hourglass_empty_rounded, size: 12, color: Colors.orange),
-                                        ),
-                                      Text(
-                                        (isPending ? 'ONAY BEKLIYOR' : _getRoleLabel(role)).toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          color: accentColor,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
                       ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: onSurface.withValues(alpha: 0.2),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            club.name,
+                            style: TextStyle(
+                              color: onSurface,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            club.description,
+                            style: TextStyle(
+                              color: onSurface.withValues(alpha: 0.55),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: onSurface.withValues(alpha: 0.3)),
+                  ],
                 ),
               ),
             ],

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:unihub/login.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/utils/theme_provider.dart';
-import 'package:unihub/services/auth_service.dart';
-import 'package:unihub/services/database_service.dart';
-import 'package:unihub/models/profile.dart';
+import 'package:kulupi/login.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/utils/theme_provider.dart';
+import 'package:kulupi/services/auth_service.dart';
+import 'package:kulupi/services/database_service.dart';
+import 'package:kulupi/models/profile.dart';
 
 class ModernUserProfileTab extends StatefulWidget {
   const ModernUserProfileTab({super.key});
@@ -437,7 +437,8 @@ class _ModernUserProfileTabState extends State<ModernUserProfileTab> {
                           ),
                           Switch.adaptive(
                             value: isDark,
-                            activeColor: AuraTheme.kAccentCyan,
+                            activeThumbColor: AuraTheme.kAccentCyan,
+                            activeTrackColor: AuraTheme.kAccentCyan.withValues(alpha: 0.5),
                             onChanged: (value) {
                               themeProvider.toggleTheme(value);
                             },

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:unihub/utils/hex_color.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/tabs/club_detail_page.dart';
-import 'package:unihub/services/auth_service.dart';
-import 'package:unihub/services/database_service.dart';
-import 'package:unihub/models/club.dart';
-import 'package:unihub/models/profile.dart';
-import 'package:unihub/widgets/aura_pull_to_refresh.dart';
+import 'package:kulupi/utils/hex_color.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/tabs/club_detail_page.dart';
+import 'package:kulupi/services/auth_service.dart';
+import 'package:kulupi/services/database_service.dart';
+import 'package:kulupi/models/club.dart';
+import 'package:kulupi/models/profile.dart';
+import 'package:kulupi/widgets/aura_pull_to_refresh.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
+import 'package:kulupi/models/event.dart';
 
 class DiscoverClubsTab extends StatefulWidget {
   const DiscoverClubsTab({super.key});
@@ -25,12 +28,20 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
   List<Club> _filteredClubs = [];
   bool _isLoading = true;
   Profile? _profile;
+  int _selected = 0; // 0: Kulüpler, 1: Etkinlikler
+  CalendarFormat _calendarFormat = CalendarFormat.week;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  bool _isLoadingEvents = true;
+  List<Map<String, dynamic>> _allEventsData = [];
 
   @override
   void initState() {
     super.initState();
     _loadInitialData();
     _searchController.addListener(_onSearchChanged);
+    _selectedDay = _focusedDay;
+    _loadEvents();
   }
 
   Future<void> _loadInitialData() async {
@@ -75,6 +86,60 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
     }
   }
 
+  Future<void> _loadEvents() async {
+    if (!mounted) return;
+    setState(() => _isLoadingEvents = true);
+    try {
+      _profile = await _authService.getCurrentProfile();
+      List<Map<String, dynamic>> data = [];
+      if (_profile != null && _profile!.universityId != null) {
+        data = await _dbService.getEventsByUniversity(_profile!.universityId!);
+      }
+      if (data.isEmpty) {
+        final user = _authService.currentUser;
+        if (user != null) {
+          final memberships = await _dbService.getUserClubs(user.id);
+          final clubIds = memberships.map((m) => m['club_id'] as int).toList();
+          data = await _dbService.getEventsForClubs(clubIds);
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _allEventsData = data;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Etkinlikler yüklenemedi: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingEvents = false);
+    }
+  }
+
+  List<Map<String, dynamic>> _getEventsForDay(DateTime day) {
+    return _allEventsData.where((item) {
+      final event = EventModel.fromJson(item);
+      return isSameDay(event.startTime, day);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _getUpcomingEvents() {
+    final now = DateTime.now();
+    final upcoming = _allEventsData.where((item) {
+      final event = EventModel.fromJson(item);
+      return event.startTime.isAfter(now);
+    }).toList();
+    upcoming.sort((a, b) {
+      final dateA = DateTime.tryParse(a['start_time'].toString()) ?? DateTime.now();
+      final dateB = DateTime.tryParse(b['start_time'].toString()) ?? DateTime.now();
+      return dateA.compareTo(dateB);
+    });
+    return upcoming.take(5).toList();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -87,35 +152,342 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
       auraColor: AuraTheme.kAccentCyan,
       body: Column(
         children: [
-          // --- SEARCH BAR ---
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-            child: AuraGlassTextField(
-              controller: _searchController,
-              hintText: "İlgi alanına göre ara...",
-              icon: Icons.search_rounded,
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: AuraGlassCard(
+              padding: const EdgeInsets.all(6),
+              borderRadius: 16,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selected = 0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _selected == 0 ? AuraTheme.kAccentCyan : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "Kulüpler",
+                          style: TextStyle(
+                            color: _selected == 0 ? Colors.black : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selected = 1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _selected == 1 ? AuraTheme.kAccentCyan : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "Etkinlikler",
+                          style: TextStyle(
+                            color: _selected == 1 ? Colors.black : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          // --- SEARCH BAR ---
+          if (_selected == 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+              child: AuraSearchField(
+                controller: _searchController,
+                hintText: "İlgi alanına göre ara...",
+                onChanged: (_) => _onSearchChanged(),
+              ),
+            ),
 
           // --- CLUB LIST ---
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredClubs.isEmpty
-                    ? _buildEmptyState(_searchText.isNotEmpty
-                        ? "Sonuç bulunamadı."
-                        : "Okulundaki tüm kulüplere üyesin! 🎉")
-                    : AuraPullToRefresh(
-                        onRefresh: _loadInitialData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(24, 10, 24, 100),
-                          itemCount: _filteredClubs.length,
-                          itemBuilder: (context, index) {
-                            final club = _filteredClubs[index];
-                            return _buildAuraClubCard(context, club);
-                          },
+            child: _selected == 0
+                ? (_isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredClubs.isEmpty
+                        ? _buildEmptyState(_searchText.isNotEmpty
+                            ? "Sonuç bulunamadı."
+                            : "Okulundaki tüm kulüplere üyesin! 🎉")
+                        : AuraPullToRefresh(
+                            onRefresh: _loadInitialData,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(24, 10, 24, 100),
+                              itemCount: _filteredClubs.length,
+                              itemBuilder: (context, index) {
+                                final club = _filteredClubs[index];
+                                return _buildAuraClubCard(context, club);
+                              },
+                            ),
+                          ))
+                : AuraPullToRefresh(
+                    onRefresh: _loadEvents,
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+                            child: AuraGlassCard(
+                              padding: const EdgeInsets.all(12),
+                              borderRadius: 28,
+                              child: TableCalendar(
+                                firstDay: DateTime.utc(2024, 1, 1),
+                                lastDay: DateTime.utc(2026, 12, 31),
+                                focusedDay: _focusedDay,
+                                calendarFormat: _calendarFormat,
+                                locale: 'tr_TR',
+                                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                                onDaySelected: (selectedDay, focusedDay) {
+                                  setState(() {
+                                    _selectedDay = selectedDay;
+                                    _focusedDay = focusedDay;
+                                  });
+                                },
+                                onFormatChanged: (format) {
+                                  setState(() {
+                                    _calendarFormat = format;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(28, 20, 24, 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: AuraTheme.kAccentCyan,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _selectedDay == null 
+                                      ? "Etkinlikler" 
+                                      : "${DateFormat('d MMMM', 'tr_TR').format(_selectedDay!)} Etkinlikleri",
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_isLoadingEvents)
+                          const SliverToBoxAdapter(
+                            child: Center(child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: CircularProgressIndicator(color: AuraTheme.kAccentCyan),
+                            )),
+                          )
+                        else
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final dayEvents = _getEventsForDay(_selectedDay!);
+                                if (dayEvents.isEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(60.0),
+                                    child: Center(
+                                      child: Column(
+                                        children: [
+                                          Icon(Icons.event_note_rounded, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1), size: 64),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            "Bugün için planlanmış etkinlik yok.",
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final item = dayEvents[index];
+                                final event = EventModel.fromJson(item);
+                                final club = Club.fromJson(item['clubs']);
+                                final Color clubColor = hexToColor(club.mainColor);
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                                  child: AuraGlassCard(
+                                    padding: const EdgeInsets.all(16),
+                                    borderRadius: 24,
+                                    accentColor: clubColor,
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: clubColor.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(color: clubColor.withValues(alpha: 0.3)),
+                                          ),
+                                          child: Text(
+                                            DateFormat('HH:mm').format(event.startTime),
+                                            style: TextStyle(
+                                              color: clubColor,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                event.title,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                club.name,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              childCount: _getEventsForDay(_selectedDay!).isEmpty ? 1 : _getEventsForDay(_selectedDay!).length,
+                            ),
+                          ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(28, 40, 24, 16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: AuraTheme.kAccentCyan,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Yaklaşan Etkinlikler",
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 200,
+                            child: _isLoadingEvents 
+                              ? const Center(child: CircularProgressIndicator(color: AuraTheme.kAccentCyan))
+                              : _getUpcomingEvents().isEmpty
+                                ? Center(child: Text(
+                                    "Yaklaşan etkinlik yok",
+                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+                                  ))
+                                : ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                                    itemCount: _getUpcomingEvents().length,
+                                    itemBuilder: (context, index) {
+                                      final item = _getUpcomingEvents()[index];
+                                      final event = EventModel.fromJson(item);
+                                      final club = Club.fromJson(item['clubs']);
+                                      final Color clubColor = hexToColor(club.mainColor);
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 16),
+                                        child: AuraGlassCard(
+                                          width: 280,
+                                          borderRadius: 32,
+                                          accentColor: clubColor,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  DateFormat('d MMMM', 'tr_TR').format(event.startTime),
+                                                  style: TextStyle(color: clubColor, fontWeight: FontWeight.w900),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  event.title,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  club.name,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                                    fontSize: 13,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                        const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),

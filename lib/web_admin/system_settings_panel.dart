@@ -70,7 +70,7 @@ class _SystemSettingsPanelState extends State<SystemSettingsPanel> {
           _emailConfirmationExpiryController.text = response['email_confirmation_expiry_hours']?.toString() ?? '24';
           _maxFileSizeController.text = response['max_file_size_mb']?.toString() ?? '10';
           _allowedFileTypesController.text = response['allowed_file_types'] ?? 'jpg,jpeg,png,pdf,doc,docx';
-          _appNameController.text = response['app_name'] ?? 'UniHub';
+          _appNameController.text = response['app_name'] ?? 'Kulüpi';
           _appDescriptionController.text = response['app_description'] ?? 'Üniversite öğrencileri için sosyal platform';
           _maintenanceMode = response['maintenance_mode'] ?? false;
           _emailVerificationRequired = response['email_verification_required'] ?? true;

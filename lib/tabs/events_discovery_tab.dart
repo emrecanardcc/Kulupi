@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/services/database_service.dart';
-import 'package:unihub/services/auth_service.dart';
-import 'package:unihub/models/event.dart';
-import 'package:unihub/models/club.dart';
-import 'package:unihub/models/profile.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/services/database_service.dart';
+import 'package:kulupi/services/auth_service.dart';
+import 'package:kulupi/models/event.dart';
+import 'package:kulupi/models/club.dart';
+import 'package:kulupi/models/profile.dart';
 import 'package:intl/intl.dart';
 import 'event_detail_page.dart';
-import 'package:unihub/utils/hex_color.dart';
-import 'package:unihub/widgets/aura_pull_to_refresh.dart';
+import 'package:kulupi/utils/hex_color.dart';
+import 'package:kulupi/widgets/aura_pull_to_refresh.dart';
 
 class EventsDiscoveryTab extends StatefulWidget {
   const EventsDiscoveryTab({super.key});

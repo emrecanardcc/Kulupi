@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/utils/glass_components.dart';
 
 class StatisticsPanel extends StatelessWidget {
   const StatisticsPanel({super.key});

@@ -9,7 +9,6 @@ import '../models/club.dart';
 import '../utils/hex_color.dart';
 import '../services/database_service.dart';
 import '../utils/glass_components.dart';
-import '../widgets/aura_slide_request.dart';
 
 class ClubDetailPage extends StatefulWidget {
   final Club club;
@@ -105,9 +104,14 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final Color onSurface = colorScheme.onSurface;
     final db = DatabaseService();
-    final bannerUrl = db.getPublicUrl('clubs', widget.club.bannerPath);
-    final logoUrl = db.getPublicUrl('clubs', widget.club.logoPath);
-    bool isAdmin = _roleName != null && _roleName != 'member';
+    String normalizedRole = (() {
+      final r = _roleName?.toLowerCase();
+      if (r == 'president') return 'baskan';
+      if (r == 'admin') return 'baskan_yardimcisi';
+      if (r == 'member') return 'uye';
+      return r ?? 'uye';
+    })();
+    bool isAdmin = normalizedRole == 'baskan';
 
     return AuraScaffold(
       auraColor: themeColor,
@@ -132,7 +136,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
                         kulupId: widget.club.id.toString(),
                         kulupismi: widget.club.name,
                         primaryColor: themeColor,
-                        currentUserRole: _roleName ?? 'member',
+                        currentUserRole: normalizedRole,
                       ),
                     ),
                   );
@@ -147,10 +151,26 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-                    child: Column(
-                      children: [
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: Supabase.instance.client
+                        .from('clubs')
+                        .stream(primaryKey: ['id'])
+                        .eq('id', widget.club.id),
+                    builder: (context, snap) {
+                      final row = (snap.data != null && snap.data!.isNotEmpty) ? snap.data!.first : null;
+                      final String name = row?['name'] ?? widget.club.name;
+                      final String shortName = row?['short_name'] ?? widget.club.shortName;
+                      final String category = row?['category'] ?? widget.club.category;
+                      final String mainColorHex = row?['main_color'] ?? widget.club.mainColor;
+                      final Color liveThemeColor = hexToColor(mainColorHex);
+                      final String liveBannerPath = row?['banner_path'] ?? widget.club.bannerPath;
+                      final String liveLogoPath = row?['logo_path'] ?? widget.club.logoPath;
+                      final String liveBannerUrl = db.getPublicUrl('clubs', liveBannerPath);
+                      final String liveLogoUrl = db.getPublicUrl('clubs', liveLogoPath);
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                        child: Column(
+                          children: [
                         // Radical Header
                         Stack(
                           alignment: Alignment.bottomCenter,
@@ -160,8 +180,8 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
                               width: double.infinity,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(32),
-                                image: bannerUrl.isNotEmpty
-                                    ? DecorationImage(image: NetworkImage(bannerUrl), fit: BoxFit.cover)
+                                image: liveBannerUrl.isNotEmpty
+                                    ? DecorationImage(image: NetworkImage(liveBannerUrl), fit: BoxFit.cover)
                                     : null,
                                 color: AuraTheme.kGlassBase,
                               ),
@@ -182,30 +202,86 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
                               child: AuraGlassCard(
                                 padding: const EdgeInsets.all(4),
                                 borderRadius: 40,
-                                accentColor: themeColor,
+                                accentColor: liveThemeColor,
                                 showGlow: true,
                                 child: Container(
                                   width: 100,
                                   height: 100,
                                   decoration: const BoxDecoration(shape: BoxShape.circle),
                                   child: ClipOval(
-                                    child: logoUrl.isNotEmpty
-                                        ? Image.network(logoUrl, fit: BoxFit.cover)
+                                    child: liveLogoUrl.isNotEmpty
+                                        ? Image.network(liveLogoUrl, fit: BoxFit.cover)
                                         : Center(
                                             child: Text(
-                                              widget.club.shortName,
-                                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: themeColor),
+                                              shortName,
+                                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: liveThemeColor),
                                             ),
                                           ),
                                   ),
                                 ),
                               ),
                             ),
+                            if (!_isMember)
+                              Positioned(
+                                bottom: 12,
+                                right: 12,
+                                child: AuraGlassCard(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  borderRadius: 16,
+                                  accentColor: _hasPendingRequest ? Colors.orange : liveThemeColor,
+                                  onTap: () async {
+                                      // Capture context before async operations
+                                      final scaffoldContext = context;
+                                      if (_hasPendingRequest) {
+                                        try {
+                                          final user = Supabase.instance.client.auth.currentUser;
+                                          if (user == null) return;
+                                          await Supabase.instance.client
+                                              .from('club_members')
+                                              .delete()
+                                              .eq('club_id', widget.club.id)
+                                              .eq('user_id', user.id)
+                                              .eq('status', 'pending');
+                                          // Check mounted before calling setState or using context
+                                          if (mounted) {
+                                            _checkMembershipStatus();
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+                                              SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        }
+                                      } else {
+                                        await _sendMembershipRequest();
+                                      }
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _hasPendingRequest ? Icons.hourglass_empty_rounded : Icons.person_add_alt_1_rounded,
+                                        color: _hasPendingRequest ? Colors.orange : liveThemeColor,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _hasPendingRequest ? "İSTEĞİ GERİ ÇEK" : "İSTEK GÖNDER",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 60),
                         Text(
-                          widget.club.name,
+                          name,
                           textAlign: TextAlign.center,
                           style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle(fontSize: 28, fontWeight: FontWeight.w900))
                               .copyWith(fontSize: 28, fontWeight: FontWeight.w900, color: onSurface),
@@ -215,12 +291,12 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: themeColor.withValues(alpha: 0.5)),
-                            color: themeColor.withValues(alpha: 0.1),
+                            border: Border.all(color: liveThemeColor.withValues(alpha: 0.5)),
+                            color: liveThemeColor.withValues(alpha: 0.1),
                           ),
                           child: Text(
-                            widget.club.category,
-                            style: TextStyle(color: themeColor, fontWeight: FontWeight.bold, fontSize: 13),
+                            category,
+                            style: TextStyle(color: liveThemeColor, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -232,7 +308,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
                           child: TabBar(
                             controller: _tabController,
                             indicator: BoxDecoration(
-                              color: themeColor,
+                              color: liveThemeColor,
                               borderRadius: BorderRadius.circular(14),
                             ),
                             labelColor: Colors.black,
@@ -246,8 +322,10 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
                             ],
                           ),
                         ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ];
@@ -267,33 +345,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
             ),
           ),
           
-          // Floating Slide Action
-          if (!_isMember)
-            Positioned(
-              bottom: 40,
-              left: 24,
-              right: 24,
-              child: _hasPendingRequest
-                  ? AuraGlassCard(
-                      accentColor: Colors.orange,
-                      showGlow: true,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.hourglass_empty_rounded, color: Colors.orange),
-                          const SizedBox(width: 12),
-                          Text(
-                            "İsteğin Bulutlarda Süzülüyor...",
-                            style: TextStyle(color: Colors.orange.shade200, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    )
-                  : AuraSlideRequest(
-                      accentColor: themeColor,
-                      onConfirm: _sendMembershipRequest,
-                    ),
-            ),
+          
         ],
       ),
     );

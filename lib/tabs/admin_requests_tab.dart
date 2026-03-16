@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/utils/glass_components.dart';
 
 class AdminRequestsTab extends StatefulWidget {
   final String kulupId;
@@ -121,12 +121,18 @@ class _AdminRequestsTabState extends State<AdminRequestsTab> {
             return FutureBuilder<Map<String, dynamic>>(
               future: Supabase.instance.client
                   .from('profiles')
-                  .select()
+                  .select('full_name, first_name, last_name, email, display_name')
                   .eq('id', userId)
                   .single(),
               builder: (context, profileSnapshot) {
                 final profile = profileSnapshot.data;
-                final String name = profile?['display_name'] ?? "Yükleniyor...";
+                final String name = () {
+                  if (profile == null) return "Yükleniyor...";
+                  return profile['full_name'] ??
+                      ((profile['first_name'] != null || profile['last_name'] != null)
+                          ? "${(profile['first_name'] ?? '').toString().trim()} ${(profile['last_name'] ?? '').toString().trim()}".trim()
+                          : (profile['display_name'] ?? profile['email'] ?? "Kullanıcı"));
+                }();
                 final String email = profile?['email'] ?? "";
 
                 return Padding(

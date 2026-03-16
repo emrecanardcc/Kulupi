@@ -2,7 +2,7 @@
     package="com.emrecan.cepkampus"> 
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="Cep Kampüs" 
+        android:label="Kulüpi" 
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <meta-data

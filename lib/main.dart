@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/login.dart'; 
-import 'package:unihub/main_hub.dart';
-import 'package:unihub/web_admin/web_admin_dashboard.dart'; 
+import 'package:kulupi/login.dart'; 
+import 'package:kulupi/main_hub.dart';
+import 'package:kulupi/web_admin/web_admin_dashboard.dart'; 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'utils/modern_theme.dart';
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'UniHub',
+          title: 'Kulüpi',
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

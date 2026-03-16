@@ -1,6 +1,6 @@
-# unihub
+# Kulüpi
 
-A new Flutter project.
+Kulüpi - Üniversite Kulüpleri ve Etkinlikleri Platformu
 
 ## Getting Started
 

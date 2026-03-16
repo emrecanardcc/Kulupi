@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/tabs/admin_requests_tab.dart';
-import 'package:unihub/tabs/admin_events_tab.dart';
-import 'package:unihub/tabs/admin_members_tab.dart';
-import 'package:unihub/tabs/admin_settings_tab.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/tabs/admin_requests_tab.dart';
+import 'package:kulupi/tabs/admin_events_tab.dart';
+import 'package:kulupi/tabs/admin_members_tab.dart';
+import 'package:kulupi/tabs/admin_settings_tab.dart';
 
 class AdminPanel extends StatefulWidget {
   final String kulupId;
@@ -87,7 +87,7 @@ class _AdminPanelState extends State<AdminPanel> with TickerProviderStateMixin {
               borderRadius: 20,
               child: TabBar(
                 controller: _tabController,
-                isScrollable: true,
+                isScrollable: false,
                 indicator: BoxDecoration(
                   color: widget.primaryColor,
                   borderRadius: BorderRadius.circular(14),

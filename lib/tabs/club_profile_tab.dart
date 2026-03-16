@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/widget/badge_grid.dart';
+import 'package:kulupi/widget/badge_grid.dart';
 import '../utils/glass_components.dart';
 
 class ClubProfileTab extends StatefulWidget {
@@ -150,6 +150,7 @@ class _ClubProfileTabState extends State<ClubProfileTab> {
             .select()
             .eq('club_id', widget.kulupId)
             .eq('user_id', user.id)
+            .eq('status', 'approved')
             .asStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -282,7 +283,7 @@ class _ClubProfileTabState extends State<ClubProfileTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInfoRow("Katılım Tarihi", _formatDate(memberData?['created_at'])),
+                      _buildInfoRow("Katılım Tarihi", _formatDate(memberData?['joined_at'] ?? memberData?['created_at'])),
                       const SizedBox(height: 16),
                       _buildInfoRow("Üyelik Durumu", "Aktif"),
                     ],

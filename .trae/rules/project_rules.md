@@ -37,7 +37,7 @@
   - Editable fields: `name`, `description`, `category`, `short_name`, `main_color (hex)`, `logo_path`, `banner_path`.
   - Member roles can be updated (baskan, baskan_yardimcisi, koordinator, uye). Ensure role mapping is consistent across UI and DB.
 - **Top Bar & Navigation:**
-  - App bar: left “UniHub”, center active page title. Notification bell on the right.
+  - App bar: left “Kulüpi”, center active page title. Notification bell on the right.
 - **Sponsor Card Readability:**
   - Use a dark gradient overlay with white text to ensure readability over banners.
 - **Profile UX:**
@@ -47,3 +47,24 @@
 - **Data Retrieval & Joins:**
   - Prefer Supabase joins for efficiency; when RLS or schema constraints block joins, switch to safe client-side composition and keep UI resilient.
 
+## 5. SÜREÇ DİSİPLİNİ VE KALİTE STANDARTLARI
+- Tembellik yok: kısmi/placeholder kod yasak. Her görev uçtan uca tamamlanır.
+- Kontrollü değişiklik: yalnızca gerekli dosyalar düzenlenir, mevcut stil/pattern korunur.
+- Komut detaylandırma: verilen talimatlar alt adımlara bölünür, plan oluşturulur, uygulanır.
+- Doğrulama: değişiklik sonrası `flutter analyze` çalıştırılır, uyarılar incelenir, engelleyici hatalar düzeltilir.
+- Hata dayanıklılığı: async işlerde try/catch, kullanıcıya anlamlı geri bildirim, context guard.
+- Tutarlılık: Light/Dark mod paritesi, okunabilirlik ve kontrast ilkeleri zorunludur.
+- Güvenlik: gizli anahtarlar/loglar yok; Supabase RLS ve yetkilendirme kurallarına uyum.
+
+## 6. TASARIM SİSTEMİNE UYUM
+- Bileşen önceliği: AuraGlassCard, AuraSearchField, ModernTheme kullan.
+- Renkler: brand cyan ve gri ton skalası; light modda düşük parlaklık, belirgin ayrım.
+- Tipografi: başlıklar kalın ve siyah (light), koyu modda beyaz; metinler okunur ağırlıkta.
+- Cam efekt: light modda hafif koyu tint; navbar/kart zemininden net ayrışma.
+- Spacing ve radius: mevcut dosyalardaki kavis ve padding değerleri referans alınır.
+
+## 7. İŞLEYİŞ KURALLARI
+- Görev takibi: karmaşık işlerde yapılacaklar oluşturulur ve tamamlandıkça işaretlenir.
+- Araştırma: kod tabanında arama yapılarak kapsam belirlenir, ilgili dosyalar güncellenir.
+- Assumption politikası: belirsizlikte makul varsayımla ilerlenir, uygulama içinde belgelenir.
+- Sonuçların sunumu: yapılan değişiklikler açık, kısa maddelerle raporlanır; kaynak dosya linkleri verilir.

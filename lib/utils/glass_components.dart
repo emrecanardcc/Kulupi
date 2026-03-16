@@ -85,15 +85,14 @@ class AuraGlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Light Mode Glass: More opaque white, stronger shadows
-    // Dark Mode Glass: Very transparent white, subtle shadows
+    // Premium Light Mode: Navbar ve kartlar için daha belirgin ayrım
     final Color glassColor = isDark 
         ? Colors.white.withValues(alpha: 0.05)
-        : const Color(0xFFF3F4F6).withValues(alpha: 0.55);
+        : Colors.black.withValues(alpha: 0.07); // Hafif koyu tint (Glass Black)
         
     final Color borderColor = isDark
         ? Colors.white.withValues(alpha: 0.12)
-        : const Color(0xFFD1D5DB).withValues(alpha: 0.6);
+        : Colors.black.withValues(alpha: 0.05); // İnce koyu kenarlık
 
     return GestureDetector(
       onTap: onTap,
@@ -101,29 +100,42 @@ class AuraGlassCard extends StatelessWidget {
         margin: margin,
         width: width,
         height: height,
+        decoration: !isDark ? BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ) : null,
         child: Stack(
           children: [
-          if (showGlow && accentColor != null)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor!.withValues(alpha: isDark ? 0.4 : 0.25),
-                      blurRadius: 20,
-                      spreadRadius: -5,
-                    ),
-                  ],
+            if (showGlow && accentColor != null)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor!.withValues(alpha: isDark ? 0.4 : 0.15),
+                        blurRadius: 20,
+                        spreadRadius: -5,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             
             // Glass Effect
             ClipRRect(
               borderRadius: BorderRadius.circular(borderRadius),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: AuraTheme.kBlurSigma, sigmaY: AuraTheme.kBlurSigma),
+                filter: ImageFilter.blur(
+                  sigmaX: AuraTheme.kBlurSigma, 
+                  sigmaY: AuraTheme.kBlurSigma
+                ),
                 child: Container(
                   padding: padding ?? const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -131,15 +143,17 @@ class AuraGlassCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(borderRadius),
                     border: Border.all(
                       color: borderColor,
-                      width: AuraTheme.kBorderWidth,
+                      width: isDark ? AuraTheme.kBorderWidth : 1.0, 
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
-                        blurRadius: 30,
-                        offset: const Offset(0, 15),
-                      ),
-                    ],
+                    // Işık modunda gradient kaldırıldı, daha düz ve temiz cam
+                    gradient: isDark ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.2),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                    ) : null,
                   ),
                   child: child,
                 ),
@@ -178,24 +192,63 @@ class AuraScaffold extends StatelessWidget {
       appBar: appBar,
       body: Stack(
         children: [
-          // Background Mesh (Only for Dark Mode or Custom Gradient for Light)
+          // Background Decor (Clean Light Mode)
+          if (!isDark)
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFFAFAFA), // Pure White/Gray
+                      Color(0xFFF3F4F6), // Soft Gray
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Background Mesh (Only for Dark Mode)
           if (isDark)
             Positioned.fill(
               child: Container(decoration: const BoxDecoration(gradient: AuraTheme.kCyberMesh)),
             ),
           
-          // Dynamic Aura Glow
-          if (auraColor != null)
+          // Dynamic Aura Glow (Optimized for both modes)
+          if (auraColor != null) ...[
+            // Sağ Üst Orb
             Positioned(
               top: -150,
               right: -100,
-              child: _AuraOrb(color: auraColor!, size: 400),
+              child: _AuraOrb(
+                color: auraColor!, 
+                size: 450, 
+                opacity: isDark ? 0.25 : 0.15 // Işık modunda daha soft
+              ),
             ),
+            
+            // Sol Orta Orb (Dinamik Blur Etkisi için)
+            Positioned(
+              top: 150,
+              left: -150,
+              child: _AuraOrb(
+                color: isDark ? AuraTheme.kElectricPurple : AuraTheme.kAccentCyan.withValues(alpha: 0.4), 
+                size: 400, 
+                opacity: isDark ? 0.2 : 0.1
+              ),
+            ),
+          ],
           
+          // Sol Alt Orb
           Positioned(
-            bottom: -100,
+            bottom: -120,
             left: -100,
-            child: _AuraOrb(color: auraColor?.withValues(alpha: 0.5) ?? AuraTheme.kNeonCyan, size: 300),
+            child: _AuraOrb(
+              color: auraColor?.withValues(alpha: 0.5) ?? AuraTheme.kNeonCyan, 
+              size: 350,
+              opacity: isDark ? 0.25 : 0.15
+            ),
           ),
 
           SafeArea(child: body),
@@ -209,8 +262,9 @@ class AuraScaffold extends StatelessWidget {
 class _AuraOrb extends StatelessWidget {
   final Color color;
   final double size;
+  final double opacity;
 
-  const _AuraOrb({required this.color, required this.size});
+  const _AuraOrb({required this.color, required this.size, this.opacity = 0.25});
 
   @override
   Widget build(BuildContext context) {
@@ -221,8 +275,8 @@ class _AuraOrb extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            color.withValues(alpha: 0.25),
-            color.withValues(alpha: 0.05),
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: opacity * 0.2),
             Colors.transparent,
           ],
         ),
@@ -254,40 +308,162 @@ class AuraGlassTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color onSurface = Theme.of(context).colorScheme.onSurface;
+    
+    // Modern Light Mode Design for TextField
     final Color fieldColor = isDark
         ? Colors.white.withValues(alpha: 0.05)
-        : const Color(0xFFF3F4F6).withValues(alpha: 0.8);
+        : const Color(0xFFF3F4F6); // Açık modda solid gri (daha temiz görünüm)
+        
     final Color borderColor = isDark
         ? Colors.white.withValues(alpha: 0.1)
-        : const Color(0xFFD1D5DB).withValues(alpha: 0.7);
+        : const Color(0xFFE5E7EB); // Açık modda belirgin gri kenarlık
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: fieldColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: 1,
+    return Container(
+      decoration: !isDark ? BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        // Işık modunda gölge kaldırıldı, flat tasarım
+      ) : null,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            decoration: BoxDecoration(
+              color: fieldColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: borderColor,
+                width: 1.5,
+              ),
+              gradient: isDark ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.2),
+                  Colors.white.withValues(alpha: 0.05),
+                ],
+              ) : null,
+            ),
+            child: TextField(
+              controller: controller,
+              obscureText: obscureText,
+              keyboardType: keyboardType,
+              maxLines: maxLines,
+              style: TextStyle(
+                color: onSurface, 
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: TextStyle(
+                  color: isDark ? onSurface.withValues(alpha: 0.4) : const Color(0xFF9CA3AF),
+                  fontWeight: FontWeight.w500,
+                ),
+                prefixIcon: icon != null ? Icon(
+                  icon, 
+                  color: isDark ? onSurface.withValues(alpha: 0.6) : const Color(0xFF6B7280), 
+                  size: 22
+                ) : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              ),
             ),
           ),
-          child: TextField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            style: TextStyle(color: onSurface, fontSize: 15),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.5)),
-              prefixIcon: icon != null ? Icon(icon, color: onSurface.withValues(alpha: 0.6), size: 20) : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            ),
-          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AuraSearchField extends StatefulWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String>? onChanged;
+  final VoidCallback? onClear;
+  final bool autofocus;
+  final bool enabled;
+
+  const AuraSearchField({
+    super.key,
+    required this.controller,
+    this.hintText = "İlgi alanına göre ara...",
+    this.onChanged,
+    this.onClear,
+    this.autofocus = false,
+    this.enabled = true,
+  });
+
+  @override
+  State<AuraSearchField> createState() => _AuraSearchFieldState();
+}
+
+class _AuraSearchFieldState extends State<AuraSearchField> {
+  final FocusNode _focusNode = FocusNode();
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() {
+        _hasFocus = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color onSurface = Theme.of(context).colorScheme.onSurface;
+
+    final Color bgColor = isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF3F4F6);
+    final Color borderColor = isDark ? Colors.white.withValues(alpha: 0.16) : const Color(0xFFE5E7EB);
+    final Color activeBorder = AuraTheme.kAccentCyan;
+    final Color hintColor = isDark ? onSurface.withValues(alpha: 0.5) : const Color(0xFF9CA3AF);
+    final Color iconColor = isDark ? onSurface.withValues(alpha: 0.7) : const Color(0xFF6B7280);
+
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _hasFocus ? activeBorder : borderColor, width: _hasFocus ? 2 : 1.5),
+      ),
+      child: TextField(
+        controller: widget.controller,
+        focusNode: _focusNode,
+        autofocus: widget.autofocus,
+        enabled: widget.enabled,
+        onChanged: widget.onChanged,
+        style: TextStyle(
+          color: onSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.search_rounded, color: iconColor, size: 22),
+          suffixIcon: widget.controller.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.close_rounded, color: iconColor, size: 20),
+                  onPressed: () {
+                    widget.controller.clear();
+                    widget.onChanged?.call("");
+                    widget.onClear?.call();
+                    setState(() {});
+                  },
+                )
+              : null,
+          hintText: widget.hintText,
+          hintStyle: TextStyle(color: hintColor, fontWeight: FontWeight.w500),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
         ),
       ),
     );

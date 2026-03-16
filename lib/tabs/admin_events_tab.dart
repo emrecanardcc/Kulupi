@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/models/event.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/models/event.dart';
+import 'package:kulupi/utils/glass_components.dart';
 
 class AdminEventsTab extends StatefulWidget {
   final String kulupId;

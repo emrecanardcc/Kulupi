@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/web_admin/web_admin_panel.dart'; 
+import 'package:kulupi/web_admin/academic_manager.dart';
+import 'package:kulupi/web_admin/university_manager.dart';
+import 'package:kulupi/web_admin/user_management_panel.dart';
+import 'package:kulupi/web_admin/statistics_panel.dart';
+import 'package:kulupi/web_admin/system_settings_panel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/web_admin/web_admin_panel.dart'; 
-import 'package:unihub/web_admin/academic_manager.dart';
-import 'package:unihub/web_admin/user_management_panel.dart';
-import 'package:unihub/web_admin/statistics_panel.dart';
-import 'package:unihub/web_admin/system_settings_panel.dart';
-
 class WebAdminDashboard extends StatefulWidget {
   const WebAdminDashboard({super.key});
 
@@ -150,7 +150,7 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
               const Icon(Icons.rocket_launch, color: Colors.cyanAccent, size: 32),
               const SizedBox(width: 10),
               const Text(
-                "UniHub",
+                "Kulüpi",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -468,9 +468,9 @@ class _ClubManagementViewState extends State<ClubManagementView> {
             ],
           ),
         ),
-        Expanded(
-          child: _showCreator ? const ClubCreator() : const AllClubsManager(),
-        ),
+        //Expanded(
+          //child: _showCreator ? const ClubCreator() : const AllClubsManager(),
+        //),
       ],
     );
   }

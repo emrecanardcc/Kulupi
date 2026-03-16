@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/utils/glass_components.dart';
 
 class AdminMembersTab extends StatefulWidget {
   final String kulupId;
@@ -488,73 +488,89 @@ class _AdminMembersTabState extends State<AdminMembersTab> {
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             var data = docs[index];
-            String name = data['user_name'] ?? data['display_name'] ?? "?";
             String role = data['role'] ?? 'uye';
             String userId = data['user_id'];
             final Color onSurface = Theme.of(context).colorScheme.onSurface;
             var style = _getRoleStyle(context, role);
             final roleColor = style['color'] as Color;
 
-            return GestureDetector(
-              onTap: () => _showRoleDialog(userId, name, role),
-              child: AuraGlassCard(
-                accentColor: roleColor,
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  leading: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: roleColor.withValues(alpha: 0.1),
-                      border: Border.all(
-                        color: roleColor.withValues(alpha: 0.3),
-                        width: 1,
+            return FutureBuilder<Map<String, dynamic>>(
+              future: Supabase.instance.client
+                  .from('profiles')
+                  .select('full_name, first_name, last_name, email, display_name')
+                  .eq('id', userId)
+                  .single(),
+              builder: (context, snap) {
+                final profile = snap.data;
+                final String name = () {
+                  if (profile == null) return userId;
+                  return profile['full_name'] ??
+                      ((profile['first_name'] != null || profile['last_name'] != null)
+                          ? "${(profile['first_name'] ?? '').toString().trim()} ${(profile['last_name'] ?? '').toString().trim()}".trim()
+                          : (profile['display_name'] ?? profile['email'] ?? userId));
+                }();
+                return GestureDetector(
+                  onTap: () => _showRoleDialog(userId, name, role),
+                  child: AuraGlassCard(
+                    accentColor: roleColor,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: roleColor.withValues(alpha: 0.1),
+                          border: Border.all(
+                            color: roleColor.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(style['icon'], color: roleColor, size: 24),
+                      ),
+                      title: Text(
+                        name,
+                        style: TextStyle(
+                          color: onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: -0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: roleColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          style['label'].toString().toUpperCase(),
+                          style: TextStyle(
+                            color: roleColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.edit_rounded,
+                          color: onSurface.withValues(alpha: 0.5),
+                          size: 18,
+                        ),
                       ),
                     ),
-                    child: Icon(style['icon'], color: roleColor, size: 24),
                   ),
-                  title: Text(
-                    name,
-                    style: TextStyle(
-                      color: onSurface,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      letterSpacing: -0.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: roleColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      style['label'].toString().toUpperCase(),
-                      style: TextStyle(
-                        color: roleColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.edit_rounded,
-                      color: onSurface.withValues(alpha: 0.5),
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
+                );
+              },
             );
           },
         );

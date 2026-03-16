@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/main_hub.dart';
-import 'package:unihub/register_modern.dart';
-import 'package:unihub/utils/glass_components.dart';
-import 'package:unihub/services/auth_service.dart';
-import 'package:unihub/services/database_service.dart';
-import 'package:unihub/models/university.dart';
+import 'package:kulupi/main_hub.dart';
+import 'package:kulupi/register_modern.dart';
+import 'package:kulupi/utils/glass_components.dart';
+import 'package:kulupi/services/auth_service.dart';
+import 'package:kulupi/services/database_service.dart';
+import 'package:kulupi/models/university.dart';
 
 class GirisEkrani extends StatefulWidget {
   const GirisEkrani({super.key});
@@ -252,7 +252,7 @@ class _GirisEkraniState extends State<GirisEkrani> {
               const SizedBox(height: 32),
               
               const Text(
-                "UniHub",
+                "Kulüpi",
                 style: AuraTheme.kHeadingDisplay,
               ),
               const SizedBox(height: 8),

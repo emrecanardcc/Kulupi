@@ -260,78 +260,91 @@ class ModernTheme {
     );
   }
 
-  // Açık Mod (Yeni Daylight Glass)
+  // Açık Mod (Yenilenmiş Modern Light Design)
   static ThemeData get lightTheme {
-    const Color bgLight = Color(0xFFF1F4F8);
-    const Color surfaceLight = Color(0xFFF8FAFC);
-    const Color cardLight = Color(0xFFFFFFFF);
-    const Color textLight = Color(0xFF111827);
-    const Color textSecondaryLight = Color(0xFF374151);
-    const Color textMutedLight = Color(0xFF6B7280);
+    // --- MODERN LIGHT PALETTE ---
+    const Color bgLight = Color(0xFFFAFAFA); // Çok açık gri/beyaz (Ana arka plan)
+    const Color surfaceLight = Color(0xFFFFFFFF); // Kartlar için tam beyaz
+    const Color cardLight = Color(0xFFFFFFFF); 
+    
+    // Brand Colors
+    const Color brandCyan = Color(0xFF00B8D4); // Biraz daha koyu ve okunur bir cyan
+    
+    // Text Colors
+    const Color textPrimary = Colors.black; // Tam siyah (Kullanıcı isteği: Kalın siyah)
+    const Color textSecondary = Color(0xFF374151); // Koyu gri (Gray 700)
+    const Color textMuted = Color(0xFF6B7280); // Orta gri (Gray 500)
 
     return ThemeData(
       brightness: Brightness.light,
       scaffoldBackgroundColor: bgLight,
-      primaryColor: secondaryBlue,
+      primaryColor: brandCyan,
       canvasColor: surfaceLight,
       cardColor: cardLight,
+      useMaterial3: true,
       colorScheme: const ColorScheme.light(
-        primary: secondaryBlue,
-        secondary: primaryCyan,
-        tertiary: accentPurple,
-        surface: surfaceLight,
-        error: errorRed,
-        onSurface: textLight,
+        primary: brandCyan,
+        secondary: brandCyan,
+        tertiary: Color(0xFF7C3AED), // Violet 600
+        surface: cardLight,
+        error: Color(0xFFDC2626), // Red 600
+        onSurface: textPrimary,
+        onPrimary: Colors.white,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: textLight),
+        scrolledUnderElevation: 0,
+        iconTheme: IconThemeData(color: Colors.black, size: 24),
         titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: textLight,
-          letterSpacing: -0.2,
+          fontSize: 22, // Biraz daha büyük
+          fontWeight: FontWeight.w900, // En kalın
+          color: Colors.black, // Tam siyah
+          letterSpacing: -0.5,
+          fontFamily: 'Inter',
         ),
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textLight, letterSpacing: -0.5),
-        displayMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textLight, letterSpacing: -0.3),
-        displaySmall: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textLight, letterSpacing: -0.2),
-        headlineMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textLight),
-        headlineSmall: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textLight),
-        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: textSecondaryLight, height: 1.5),
-        bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: textSecondaryLight, height: 1.4),
-        labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: textMutedLight),
+        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: textPrimary, letterSpacing: -1.0),
+        displayMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.8),
+        displaySmall: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.5),
+        headlineMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: textPrimary),
+        headlineSmall: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary),
+        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textSecondary, height: 1.5),
+        bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textSecondary, height: 1.5),
+        labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textMuted, letterSpacing: 0.5),
       ),
-      dividerColor: const Color(0xFFE5E7EB),
-      iconTheme: const IconThemeData(color: textLight),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: secondaryBlue),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFE5E7EB), // Gray 200
+        thickness: 1,
+        space: 24,
       ),
-      chipTheme: const ChipThemeData(
-        backgroundColor: surfaceLight,
-        selectedColor: Color(0xFFE0F2FE),
-        labelStyle: TextStyle(color: textSecondaryLight),
-        secondaryLabelStyle: TextStyle(color: textLight),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+      chipTheme: ChipThemeData(
+        backgroundColor: Color(0xFFF3F4F6), // Gray 100
+        selectedColor: brandCyan.withValues(alpha: 0.15),
+        labelStyle: const TextStyle(color: textSecondary, fontWeight: FontWeight.w600),
+        secondaryLabelStyle: const TextStyle(color: brandCyan, fontWeight: FontWeight.w700),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: secondaryBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: brandCyan,
+          foregroundColor: Colors.black, // Cyan üzerinde siyah
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.3),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: secondaryBlue,
-          side: const BorderSide(color: secondaryBlue, width: 2),
+          foregroundColor: brandCyan,
+          side: const BorderSide(color: brandCyan, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
       inputDecorationTheme: _buildInputTheme(isDark: false),
@@ -339,9 +352,9 @@ class ModernTheme {
   }
 
   static InputDecorationTheme _buildInputTheme({required bool isDark}) {
-    final borderColor = isDark ? glassBorder : const Color(0xFFE5E7EB);
-    final fillColor = isDark ? surfaceDark : const Color(0xFFF8FAFC);
-    final hintColor = isDark ? textMuted : const Color(0xFF9CA3AF);
+    final borderColor = isDark ? glassBorder : const Color(0xFFCBD5E1); // Slate 300
+    final fillColor = isDark ? surfaceDark : const Color(0xFFE2E8F0); // Slate 200
+    final hintColor = isDark ? textMuted : const Color(0xFF64748B); // Slate 500
 
     return InputDecorationTheme(
       border: OutlineInputBorder(
@@ -354,12 +367,12 @@ class ModernTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? primaryCyan : secondaryBlue, width: 2),
+        borderSide: BorderSide(color: isDark ? primaryCyan : const Color(0xFF00E5FF), width: 2),
       ),
       filled: true,
       fillColor: fillColor,
-      hintStyle: body2.copyWith(color: hintColor),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      hintStyle: TextStyle(color: hintColor, fontSize: 14),
     );
   }
 }

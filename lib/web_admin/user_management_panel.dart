@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:unihub/utils/glass_components.dart';
+import 'package:kulupi/utils/glass_components.dart';
 
 class UserManagementPanel extends StatefulWidget {
   const UserManagementPanel({super.key});
@@ -53,33 +53,6 @@ class _UserManagementPanelState extends State<UserManagementPanel> {
     }
   }
 
-  Future<void> _updateUserRole(String userId, String newRole) async {
-    try {
-      await Supabase.instance.client
-          .from('profiles')
-          .update({'role': newRole})
-          .eq('id', userId);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Kullanıcı rolü güncellendi: $newRole"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadUsers(); // Listeyi yenile
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Rol güncellenirken hata: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   Future<void> _deleteUser(String userId) async {
     final confirmed = await showDialog<bool>(
@@ -485,16 +458,11 @@ class _UserManagementPanelState extends State<UserManagementPanel> {
             // İşlem Butonları
             Row(
               children: [
-                // Rol Değiştir
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.cyanAccent),
-                  onPressed: () => _showRoleChangeDialog(user),
-                ),
                 // Engelle/Kaldır
                 IconButton(
                   icon: Icon(
                     isBanned ? Icons.lock_open : Icons.block,
-                    color: isBanned ? Colors.greenAccent : Colors.redAccent,
+                  color: isBanned ? Colors.greenAccent : Colors.redAccent,
                   ),
                   onPressed: () => _toggleUserBan(user['id'], isBanned),
                 ),
@@ -511,68 +479,6 @@ class _UserManagementPanelState extends State<UserManagementPanel> {
     );
   }
 
-  void _showRoleChangeDialog(Map<String, dynamic> user) {
-    String? newRole = user['role'];
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF203A43).withValues(alpha: 0.9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Rol Değiştir", style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Kullanıcı: ${user['email']}", style: const TextStyle(color: Colors.white70)),
-            const SizedBox(height: 20),
-            StatefulBuilder(
-              builder: (context, setState) => Column(
-                children: [
-                  RadioListTile<String>(
-                    title: const Text("Admin", style: TextStyle(color: Colors.white)),
-                    value: "admin",
-                    groupValue: newRole,
-                    onChanged: (value) => setState(() => newRole = value),
-                    activeColor: Colors.cyanAccent,
-                  ),
-                  RadioListTile<String>(
-                    title: const Text("Kulüp Admin", style: TextStyle(color: Colors.white)),
-                    value: "club_admin",
-                    groupValue: newRole,
-                    onChanged: (value) => setState(() => newRole = value),
-                    activeColor: Colors.cyanAccent,
-                  ),
-                  RadioListTile<String>(
-                    title: const Text("Kullanıcı", style: TextStyle(color: Colors.white)),
-                    value: "user",
-                    groupValue: newRole,
-                    onChanged: (value) => setState(() => newRole = value),
-                    activeColor: Colors.cyanAccent,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("İptal", style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (newRole != null && newRole != user['role']) {
-                _updateUserRole(user['id'], newRole!);
-              }
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent),
-            child: const Text("Kaydet"),
-          ),
-        ],
-      ),
-    );
-  }
 
   Color _getRoleColor(String? role) {
     switch (role) {
