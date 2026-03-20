@@ -6,6 +6,7 @@ import 'package:kulupi/utils/glass_components.dart';
 import 'package:kulupi/services/auth_service.dart';
 import 'package:kulupi/services/database_service.dart';
 import 'package:kulupi/models/university.dart';
+import 'package:kulupi/main.dart'; // EKLENDİ: AuthWrapper'a ulaşabilmek için
 
 class GirisEkrani extends StatefulWidget {
   const GirisEkrani({super.key});
@@ -21,7 +22,6 @@ class _GirisEkraniState extends State<GirisEkrani> {
   final DatabaseService _dbService = DatabaseService();
 
   List<University> _universities = [];
-  // University? _selectedUniversity;
   bool _isLoading = false;
   final bool _isObscured = true;
 
@@ -121,7 +121,7 @@ class _GirisEkraniState extends State<GirisEkrani> {
     try {
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email,
-        redirectTo: 'https://your-app-url.com/login', // TODO: Uygulama URL'nizi ayarlayın
+        redirectTo: 'https://kulupi.com/login', // GÜNCELLENDİ: Gerçek domainini yazdık
       );
 
       if (mounted) {
@@ -149,9 +149,6 @@ class _GirisEkraniState extends State<GirisEkrani> {
       if (mounted) {
         setState(() {
           _universities = unis;
-          if (_universities.isNotEmpty) {
-            // _selectedUniversity = _universities.first;
-          }
           _isLoading = false;
         });
       }
@@ -195,9 +192,10 @@ class _GirisEkraniState extends State<GirisEkrani> {
       );
 
       if (!mounted) return;
+      // DÜZELTME: Girişten sonra AuthWrapper'a yönlendir ki rolümüzü kontrol edip doğru sayfayı açsın
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainHub()),
+        MaterialPageRoute(builder: (context) => const AuthWrapper()),
       );
     } on AuthException catch (e) {
       String hataMesaji = "Giriş başarısız: ${e.message}";

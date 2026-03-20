@@ -9,6 +9,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'utils/modern_theme.dart';
 import 'utils/theme_provider.dart';
+import 'package:kulupi/models/profile.dart'; // EKLENDİ
+import 'package:kulupi/services/auth_service.dart'; // EKLENDİ
 
 const String supabaseUrl = 'https://kalkeswsmpjlodhwxcfy.supabase.co';
 const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthbGtlc3dzbXBqbG9kaHd4Y2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NDIxNzksImV4cCI6MjA4NjQxODE3OX0.RwbhRHTr612tCY16fzgvA0bQ3RWjHCSWukC_GVfMoRo';
@@ -58,8 +60,10 @@ class MyApp extends StatelessWidget {
           themeMode: themeProvider.themeMode,
           theme: ModernTheme.lightTheme,
           darkTheme: ModernTheme.darkTheme,
-          // EĞER WEB İSE DİREKT ADMİN PANELİNE GİT, MOBİL İSE ÖNCE BAKIM KONTROLÜ YAP
-          home: kIsWeb ? const WebAdminDashboard() : const MaintenanceWrapper(),
+          
+          // GÜVENLİK GÜNCELLEMESİ: kIsWeb kontrolünü kaldırdık. 
+          // Artık herkes (web veya mobil) bakım ve kimlik doğrulama duvarından geçecek.
+          home: const MaintenanceWrapper(),
         );
       },
     );
@@ -67,14 +71,13 @@ class MyApp extends StatelessWidget {
 }
 
 // --------------------------------------------------------------------------
-// YENİ EKLENDİ: BAKIM MODU KONTROLCÜSÜ (Canlı Veri Dinler)
+// BAKIM MODU KONTROLCÜSÜ (Canlı Veri Dinler)
 // --------------------------------------------------------------------------
 class MaintenanceWrapper extends StatelessWidget {
   const MaintenanceWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Veritabanındaki app_config tablosunu canlı olarak dinler
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: Supabase.instance.client.from('app_config').stream(primaryKey: ['id']).eq('id', 1),
       builder: (context, snapshot) {
@@ -88,17 +91,14 @@ class MaintenanceWrapper extends StatelessWidget {
         final data = snapshot.data;
         bool isMaintenance = false;
         
-        // Veritabanından gelen maintenance_mode değerini al
         if (data != null && data.isNotEmpty) {
           isMaintenance = data.first['maintenance_mode'] ?? false;
         }
 
-        // Eğer bakım modundaysa, şık bakım ekranını göster
         if (isMaintenance) {
           return const MaintenanceScreen();
         }
 
-        // Bakım modu KAPALIYSA normal uygulamanın akışına (Giriş veya Ana Sayfa) devam et
         return const AuthWrapper();
       },
     );
@@ -106,7 +106,7 @@ class MaintenanceWrapper extends StatelessWidget {
 }
 
 // --------------------------------------------------------------------------
-// YENİ EKLENDİ: BAKIMDAYIZ EKRANI TASARIMI
+// BAKIMDAYIZ EKRANI TASARIMI
 // --------------------------------------------------------------------------
 class MaintenanceScreen extends StatelessWidget {
   const MaintenanceScreen({super.key});
@@ -114,14 +114,13 @@ class MaintenanceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F2027), // Aura Glass konseptine uygun derin renk
+      backgroundColor: const Color(0xFF0F2027),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(40.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // İkon ve Glow Efekti
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -137,7 +136,7 @@ class MaintenanceScreen extends StatelessWidget {
                   ],
                 ),
                 child: const Icon(
-                  Icons.handyman_rounded, // Bakım ikonu
+                  Icons.handyman_rounded,
                   size: 80,
                   color: Colors.cyanAccent,
                 ),
@@ -176,7 +175,7 @@ class MaintenanceScreen extends StatelessWidget {
 }
 
 // --------------------------------------------------------------------------
-// MEVCUT KOD: KULLANICI GİRİŞ KONTROLCÜSÜ
+// GÜNCELLENMİŞ: ROL BAZLI KULLANICI GİRİŞ KONTROLCÜSÜ
 // --------------------------------------------------------------------------
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -194,9 +193,32 @@ class AuthWrapper extends StatelessWidget {
         }
 
         final session = snapshot.data?.session;
+        
         if (session != null) {
-          return const MainHub();
+          // Kullanıcı giriş yapmış, şimdi Supabase'den Rolünü öğrenelim
+          return FutureBuilder<Profile?>(
+            future: AuthService().getCurrentProfile(),
+            builder: (context, profileSnapshot) {
+              if (profileSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  backgroundColor: Color(0xFF0F2027),
+                  body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+                );
+              }
+
+              final profile = profileSnapshot.data;
+
+              // ROL KONTROLÜ: Eğer kullanıcı 'admin' ise VE web'den giriyorsa admin paneli açılsın
+              if (profile != null && profile.role == 'admin' && kIsWeb) {
+                return const WebAdminDashboard();
+              }
+              
+              // Admin değilse (normal öğrenciyse) veya admin ama mobilden giriyorsa normal hub açılsın
+              return const MainHub();
+            },
+          );
         } else {
+          // Oturum açmamış herkes (web veya mobil) Giriş ekranına yönlendirilir
           return const GirisEkrani();
         }
       },

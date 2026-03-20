@@ -1,515 +1,213 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:kulupi/utils/glass_components.dart';
+import '../utils/glass_components.dart';
 
-class UserManagementPanel extends StatefulWidget {
-  const UserManagementPanel({super.key});
-
+class UserManagementTab extends StatefulWidget {
+  const UserManagementTab({super.key});
   @override
-  State<UserManagementPanel> createState() => _UserManagementPanelState();
+  State<UserManagementTab> createState() => _UserManagementTabState();
 }
 
-class _UserManagementPanelState extends State<UserManagementPanel> {
-  List<Map<String, dynamic>> _users = [];
-  bool _isLoading = true;
-  final String _searchQuery = '';
-  String _selectedRole = 'all';
+class _UserManagementTabState extends State<UserManagementTab> {
+  String _searchQuery = "";
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUsers();
-  }
+  // KULLANICI DÜZENLEME PENCERESİ
+  void _showEditUserDialog(Map<String, dynamic> user) {
+    final nameCtrl = TextEditingController(text: user['full_name'] ?? '');
+    final aboutCtrl = TextEditingController(text: user['about'] ?? '');
+    final emailCtrl = TextEditingController(text: user['email'] ?? ''); 
 
-  Future<void> _loadUsers() async {
-    setState(() => _isLoading = true);
-    try {
-      final client = Supabase.instance.client;
-      
-      // Kullanıcıları profiles tablosundan getir (auth.users join'i kaldırıldı)
-      final response = await client
-          .from('profiles')
-          .select('*')
-          .ilike('email', '%$_searchQuery%')
-          .order('created_at', ascending: false)
-          .timeout(const Duration(seconds: 10));
-
-      if (mounted) {
-        setState(() {
-          _users = List<Map<String, dynamic>>.from(response);
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Kullanıcılar yüklenirken hata: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-
-  Future<void> _deleteUser(String userId) async {
-    final confirmed = await showDialog<bool>(
+    showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF203A43).withValues(alpha: 0.9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Kullanıcıyı Sil", style: TextStyle(color: Colors.white)),
-        content: const Text(
-          "Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
-          style: TextStyle(color: Colors.white70),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text("Kullanıcıyı Düzenle", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "Ad Soyad", labelStyle: TextStyle(color: Colors.cyanAccent)),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "İletişim E-postası", labelStyle: TextStyle(color: Colors.cyanAccent)),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: aboutCtrl,
+                maxLines: 2,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "Hakkında", labelStyle: TextStyle(color: Colors.cyanAccent)),
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("İptal", style: TextStyle(color: Colors.white70)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("İptal", style: TextStyle(color: Colors.white54))),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text("Sil"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await Supabase.instance.client.from('profiles').update({
+                  'full_name': nameCtrl.text.trim(),
+                  'email': emailCtrl.text.trim(),
+                  'about': aboutCtrl.text.trim(),
+                }).eq('id', user['id']);
+                
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kullanıcı güncellendi."), backgroundColor: Colors.green));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red));
+              }
+            },
+            child: const Text("Kaydet"),
           ),
         ],
       ),
     );
-
-    if (confirmed == true) {
-      try {
-        // Önce auth'dan sil
-        await Supabase.instance.client.auth.admin.deleteUser(userId);
-        
-        // Sonra profili sil
-        await Supabase.instance.client
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Kullanıcı silindi"),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadUsers(); // Listeyi yenile
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Kullanıcı silinirken hata: $e"),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 
-  Future<void> _toggleUserBan(String userId, bool isBanned) async {
+  // TEK TIKLA ŞİFRE SIFIRLAMA MAİLİ GÖNDERME
+  Future<void> _sendPasswordReset(String email) async {
     try {
-      await Supabase.instance.client
-          .from('profiles')
-          .update({'is_banned': !isBanned})
-          .eq('id', userId);
-
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isBanned ? "Kullanıcının engeli kaldırıldı" : "Kullanıcı engellendi"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadUsers(); // Listeyi yenile
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$email adresine sıfırlama linki gönderildi!"), backgroundColor: Colors.green));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("İşlem sırasında hata: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Mail gönderilemedi: $e"), backgroundColor: Colors.red));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.cyan.withValues(alpha: 0.1),
-                Colors.blue.withValues(alpha: 0.05),
-              ],
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Kullanıcı Destek & Yönetim", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 24),
+          
+          // ARAMA ÇUBUĞU
+          AuraGlassCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: TextField(
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                icon: Icon(Icons.search, color: Colors.cyanAccent),
+                hintText: "İsim veya E-posta ile ara...",
+                hintStyle: TextStyle(color: Colors.white54),
+                border: InputBorder.none,
+              ),
+              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             ),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Kullanıcı Yönetimi",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _loadUsers,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text("Yenile"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      foregroundColor: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Arama ve Filtreleme
-              Row(
-                children: [
-                  Expanded(
-                    child: AuraGlassTextField(
-                      controller: TextEditingController(text: _searchQuery),
-                      hintText: "Kullanıcı ara...",
-                      // prefixIcon is not supported directly in AuraGlassTextField as a property named prefixIcon?
-                      // Checking AuraGlassTextField definition in glass_components.dart
-                      // It has `icon` property for prefix icon.
-                      icon: Icons.search,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Colors.cyanAccent),
-                    onPressed: _loadUsers,
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                    ),
-                    child: DropdownButton<String>(
-                      value: _selectedRole,
-                      dropdownColor: const Color(0xFF203A43),
-                      underline: const SizedBox(),
-                      style: const TextStyle(color: Colors.white),
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text('Tüm Roller')),
-                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                        DropdownMenuItem(value: 'user', child: Text('Kullanıcı')),
-                        DropdownMenuItem(value: 'club_admin', child: Text('Kulüp Admin')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedRole = value;
-                          });
-                          _loadUsers();
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+          const SizedBox(height: 24),
 
-        // İstatistikler
-        Container(
-          margin: const EdgeInsets.all(24),
-          child: Row(
-            children: [
-              Expanded(
-                child: AuraGlassCard(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.people, color: Colors.cyanAccent, size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        _users.length.toString(),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        "Toplam Kullanıcı",
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AuraGlassCard(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.admin_panel_settings, color: Colors.greenAccent, size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        _users.where((u) => u['role'] == 'admin').length.toString(),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        "Admin Kullanıcı",
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AuraGlassCard(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.block, color: Colors.redAccent, size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        _users.where((u) => u['is_banned'] == true).length.toString(),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        "Engellenmiş Kullanıcı",
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+          // KULLANICI LİSTESİ (SADECE PROFİLLER)
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Supabase.instance.client.from('profiles').stream(primaryKey: ['id']).order('created_at', ascending: false),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.cyanAccent));
+                }
+                
+                var users = snapshot.data ?? [];
+                
+                // Arama Filtresi
+                if (_searchQuery.isNotEmpty) {
+                  users = users.where((u) {
+                    final name = (u['full_name'] ?? '').toString().toLowerCase();
+                    final email = (u['email'] ?? '').toString().toLowerCase();
+                    return name.contains(_searchQuery) || email.contains(_searchQuery);
+                  }).toList();
+                }
 
-        // Kullanıcı Listesi
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
-              : _users.isEmpty
-                  ? Center(
-                      child: Text(
-                        "Kullanıcı bulunamadı",
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: _users.length,
-                      itemBuilder: (context, index) {
-                        final user = _users[index];
-                        return _buildUserCard(user);
-                      },
-                    ),
-        ),
-      ],
-    );
-  }
+                if (users.isEmpty) return const Center(child: Text("Kullanıcı bulunamadı.", style: TextStyle(color: Colors.white70)));
 
-  Widget _buildUserCard(Map<String, dynamic> user) {
-    final isBanned = user['is_banned'] == true;
-    final userEmail = user['email'] ?? 'Bilinmeyen Email';
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: AuraGlassCard(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Avatar
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.cyan.withValues(alpha: 0.3),
-                    Colors.blue.withValues(alpha: 0.2),
-                  ],
-                ),
-                border: Border.all(
-                  color: isBanned ? Colors.redAccent : Colors.cyanAccent,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  userEmail.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            
-            // Kullanıcı Bilgileri
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    userEmail,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getRoleColor(user['role']).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _getRoleColor(user['role']),
-                            width: 1,
-                          ),
+                return AuraGlassCard(
+                  padding: const EdgeInsets.all(16),
+                  child: ListView.separated(
+                    itemCount: users.length,
+                    separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.1)),
+                    itemBuilder: (context, index) {
+                      final user = users[index];
+                      final isBanned = user['is_banned'] == true;
+                      final isManuallyVerified = user['is_manually_verified'] == true;
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isBanned ? Colors.redAccent.withValues(alpha: 0.2) : Colors.cyanAccent.withValues(alpha: 0.2),
+                          child: Icon(isBanned ? Icons.block : Icons.person, color: isBanned ? Colors.redAccent : Colors.cyanAccent),
                         ),
-                        child: Text(
-                          _getRoleName(user['role']),
-                          style: TextStyle(
-                            color: _getRoleColor(user['role']),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        title: Text(user['full_name'] ?? 'İsimsiz Kullanıcı', style: TextStyle(color: isBanned ? Colors.white54 : Colors.white, fontWeight: FontWeight.bold, decoration: isBanned ? TextDecoration.lineThrough : null)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(user['email'] ?? 'E-posta yok', style: const TextStyle(color: Colors.white70)),
+                            if (isManuallyVerified)
+                              const Text("✓ Manuel Onaylı", style: TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
                         ),
-                      ),
-                      if (isBanned) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.redAccent,
-                              width: 1,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 1. MANUEL ONAY BUTONU
+                            Tooltip(
+                              message: isManuallyVerified ? "Manuel Onayı Kaldır" : "Manuel Onay Ver (Mail kodunu atlar)",
+                              child: IconButton(
+                                icon: Icon(isManuallyVerified ? Icons.verified : Icons.verified_outlined, color: isManuallyVerified ? Colors.greenAccent : Colors.white38),
+                                onPressed: () async {
+                                  await Supabase.instance.client.from('profiles').update({'is_manually_verified': !isManuallyVerified}).eq('id', user['id']);
+                                },
+                              ),
                             ),
-                          ),
-                          child: const Text(
-                            "ENGELLENDİ",
-                            style: TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                            // 2. ŞİFRE SIFIRLAMA BUTONU
+                            Tooltip(
+                              message: "Şifre Sıfırlama Maili Gönder",
+                              child: IconButton(
+                                icon: const Icon(Icons.lock_reset, color: Colors.orangeAccent),
+                                onPressed: () => _sendPasswordReset(user['email']),
+                              ),
                             ),
-                          ),
+                            // 3. DÜZENLE BUTONU
+                            Tooltip(
+                              message: "Profili Düzenle",
+                              child: IconButton(
+                                icon: const Icon(Icons.edit_outlined, color: Colors.cyanAccent),
+                                onPressed: () => _showEditUserDialog(user),
+                              ),
+                            ),
+                            // 4. HESABI ASKIYA AL (BANLA) BUTONU
+                            Tooltip(
+                              message: isBanned ? "Banı Kaldır" : "Hesabı Askıya Al",
+                              child: IconButton(
+                                icon: Icon(isBanned ? Icons.lock_open : Icons.block, color: Colors.redAccent),
+                                onPressed: () async {
+                                  await Supabase.instance.client.from('profiles').update({'is_banned': !isBanned}).eq('id', user['id']);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ],
+                      );
+                    },
                   ),
-                  if (user['created_at'] != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      "Katılma: ${_formatDate(user['created_at'])}",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                );
+              },
             ),
-            
-            // İşlem Butonları
-            Row(
-              children: [
-                // Engelle/Kaldır
-                IconButton(
-                  icon: Icon(
-                    isBanned ? Icons.lock_open : Icons.block,
-                  color: isBanned ? Colors.greenAccent : Colors.redAccent,
-                  ),
-                  onPressed: () => _toggleUserBan(user['id'], isBanned),
-                ),
-                // Sil
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
-                  onPressed: () => _deleteUser(user['id']),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-
-  Color _getRoleColor(String? role) {
-    switch (role) {
-      case 'admin':
-        return Colors.redAccent;
-      case 'club_admin':
-        return Colors.orangeAccent;
-      case 'user':
-      default:
-        return Colors.cyanAccent;
-    }
-  }
-
-  String _getRoleName(String? role) {
-    switch (role) {
-      case 'admin':
-        return 'Admin';
-      case 'club_admin':
-        return 'Kulüp Admin';
-      case 'user':
-      default:
-        return 'Kullanıcı';
-    }
-  }
-
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return "${date.day}/${date.month}/${date.year}";
-    } catch (e) {
-      return dateStr;
-    }
   }
 }

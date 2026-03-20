@@ -271,7 +271,7 @@ class _WebAdminDashboardState extends State<WebAdminDashboard> {
       case 0:
         return _buildOverview();
       case 1:
-        return const UserManagementPanel();
+        return const UserManagementTab();
       case 2:
         return const ClubManagementView();
       case 3:
