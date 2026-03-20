@@ -2,15 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:kulupi/utils/hex_color.dart';
 import 'package:kulupi/utils/glass_components.dart';
-import 'package:kulupi/services/database_service.dart';
-import 'package:kulupi/models/university.dart';
-import 'package:kulupi/models/club.dart';
-import 'package:kulupi/models/app_enums.dart';
-import 'package:kulupi/web_admin/club_admin_dashboard.dart';
-import 'package:kulupi/web_admin/academic_manager.dart';
-import 'package:kulupi/web_admin/university_manager.dart';
 
 // --- 1. SPONSOR YÖNETİCİSİ ---
 class SponsorManager extends StatefulWidget {
@@ -301,8 +293,8 @@ class _SponsorManagerState extends State<SponsorManager> {
                                         )
                                       : const CircleAvatar(
                                           backgroundColor: Colors.cyanAccent,
-                                          child: Icon(Icons.business, color: Colors.black),
                                           radius: 20,
+                                          child: Icon(Icons.business, color: Colors.black),
                                         ),
                                   title: Text(sponsor['name'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                   subtitle: Text(sponsor['description'] ?? "", style: const TextStyle(color: Colors.white70)),
@@ -326,7 +318,7 @@ class _SponsorManagerState extends State<SponsorManager> {
                                             }
                                           }
                                         },
-                                        activeColor: Colors.cyanAccent,
+                                        activeThumbColor: Colors.cyanAccent,
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.delete_outline, color: Colors.redAccent),

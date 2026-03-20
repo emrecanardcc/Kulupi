@@ -10,11 +10,15 @@ import 'package:kulupi/utils/glass_components.dart';
 class AdminSettingsTab extends StatefulWidget {
   final String kulupId;
   final Color primaryColor;
+  final String? currentUserRole; // YENİ EKLENDİ
+  final bool isSuperAdmin;       // YENİ EKLENDİ
 
   const AdminSettingsTab({
     super.key,
     required this.kulupId,
     required this.primaryColor,
+    this.currentUserRole,        // YENİ EKLENDİ
+    this.isSuperAdmin = false,   // YENİ EKLENDİ
   });
 
   @override
@@ -104,7 +108,13 @@ class _AdminSettingsTabState extends State<AdminSettingsTab> {
     return path;
   }
 
+  // BURASI DEĞİŞTİ: SUPER ADMIN KONTROLÜ EKLENDİ
   Future<bool> _ensurePresident() async {
+    // Eğer Super Admin isen (Web'den giriyorsan) veritabanına sormadan direkt TRUE dön (İzin ver)
+    if (widget.isSuperAdmin) {
+      return true;
+    }
+
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return false;
     try {

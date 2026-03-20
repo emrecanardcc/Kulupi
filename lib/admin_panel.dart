@@ -146,12 +146,15 @@ class _AdminPanelState extends State<AdminPanel> with TickerProviderStateMixin {
           currentUserRole: widget.currentUserRole,
           isSuperAdmin: widget.isSuperAdmin,
           primaryColor: widget.primaryColor,
+          
         ),
       );
       views.add(
         AdminSettingsTab(
           kulupId: widget.kulupId,
           primaryColor: widget.primaryColor,
+          currentUserRole :widget.currentUserRole,
+          isSuperAdmin : widget.isSuperAdmin,
         ),
       );
     }

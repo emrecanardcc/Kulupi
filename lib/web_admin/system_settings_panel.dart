@@ -114,10 +114,25 @@ class _SystemSettingsPanelState extends State<SystemSettingsPanel> {
         'allow_registration': _allowRegistration,
         'updated_at': DateTime.now().toIso8601String(),
       };
-
-      await Supabase.instance.client
+      // 1. Önce veritabanında 1 numaralı id'ye sahip satır var mı diye kontrol et
+      final mevcutSatir = await Supabase.instance.client
           .from('app_config')
-          .upsert(settings);
+          .select('id')
+          .eq('id', 1)
+          .maybeSingle();
+
+      if (mevcutSatir != null) {
+        // 2. Eğer satır zaten varsa, sadece UPDATE (Güncelle) yap
+        await Supabase.instance.client
+            .from('app_config')
+            .update(settings)
+            .eq('id', 1);
+      } else {
+        // 3. Eğer satır yoksa, sıfırdan INSERT (Ekle) yap
+        await Supabase.instance.client
+            .from('app_config')
+            .insert(settings);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

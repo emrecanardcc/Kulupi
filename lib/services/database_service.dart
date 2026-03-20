@@ -220,6 +220,42 @@ class DatabaseService {
     return discoverable;
   }
 
+  // =========================================================================
+  // --- YENİ EKLENEN METOT: SAYFALAMALI VE ARAMALI KULÜP KEŞFİ ---
+  // =========================================================================
+  Future<List<Club>> getDiscoverableClubsPaginated(String userId, int universityId, int offset, int limit, {String? searchQuery}) async {
+    // 1) Üye olunan kulüplerin ID'lerini getir
+    final memberships = await _supabase
+        .from('club_members')
+        .select('club_id')
+        .eq('user_id', userId)
+        .timeout(const Duration(seconds: 10));
+    
+    final memberClubIds = (memberships as List).map((m) => m['club_id']).toList();
+
+    // 2) Ana sorguyu oluştur
+    var query = _supabase.from('clubs').select().eq('university_id', universityId);
+    
+    // Zaten üye olunanları listeden çıkar
+    if (memberClubIds.isNotEmpty) {
+      query = query.filter('id', 'not.in', '(${memberClubIds.join(',')})');
+    }
+
+    // Eğer arama yapıldıysa isme veya kısaltmaya göre filtrele
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      query = query.or('name.ilike.%${searchQuery.trim()}%,short_name.ilike.%${searchQuery.trim()}%');
+    }
+
+    // 3) Sayfalama (Pagination) ayarlarını uygula
+    final data = await query
+        .range(offset, offset + limit - 1)
+        .order('created_at', ascending: false) 
+        .timeout(const Duration(seconds: 15));
+        
+    return (data as List).map((json) => Club.fromJson(json)).toList();
+  }
+  // =========================================================================
+
   // --- Events ---
   Future<List<Map<String, dynamic>>> getEventsByUniversity(int universityId) async {
     // 1) Etkinlikleri kulüp join ile çek (speakers olmadan)
@@ -326,5 +362,5 @@ class DatabaseService {
       'created_at': DateTime.now().toIso8601String(),
     }).select('id').single();
     return data['id'] as int;
-  }
+  } 
 }

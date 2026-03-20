@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kulupi/utils/hex_color.dart';
 import 'package:kulupi/utils/glass_components.dart';
@@ -6,7 +7,6 @@ import 'package:kulupi/services/auth_service.dart';
 import 'package:kulupi/services/database_service.dart';
 import 'package:kulupi/models/club.dart';
 import 'package:kulupi/models/profile.dart';
-import 'package:kulupi/widgets/aura_pull_to_refresh.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:kulupi/models/event.dart';
@@ -22,11 +22,19 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
   final AuthService _authService = AuthService();
   final DatabaseService _dbService = DatabaseService();
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController(); // SAYFALAMA İÇİN EKLENDİ
   
   String _searchText = "";
   List<Club> _allClubs = [];
-  List<Club> _filteredClubs = [];
   bool _isLoading = true;
+  
+  // SAYFALAMA (PAGINATION) DEĞİŞKENLERİ
+  int _offset = 0;
+  final int _limit = 10;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  Timer? _debounce;
+
   Profile? _profile;
   int _selected = 0; // 0: Kulüpler, 1: Etkinlikler
   CalendarFormat _calendarFormat = CalendarFormat.week;
@@ -38,51 +46,91 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
     _selectedDay = _focusedDay;
+    _loadInitialData();
     _loadEvents();
   }
 
+  // LİSTENİN SONUNA GELDİĞİNİ ALGILAYAN FONKSİYON
+  void _onScroll() {
+    if (_selected == 0 && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoadingMore && _hasMore) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // ARAMA YAPARKEN PERFORMANS İÇİN YARIM SANİYE BEKLEME (DEBOUNCE)
+  void _onSearchChanged(String value) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchText = value;
+      });
+      _loadInitialData(); // Yeni kelimeyle aramayı baştan başlat
+    });
+  }
+
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _offset = 0;
+      _hasMore = true;
+      _allClubs = [];
+    });
+    
     try {
-      _profile = await _authService.getCurrentProfile();
+      _profile ??= await _authService.getCurrentProfile();
       if (_profile != null && _profile!.universityId != null) {
-        _allClubs = await _dbService.getDiscoverableClubs(
+        final newClubs = await _dbService.getDiscoverableClubsPaginated(
           _profile!.id,
           _profile!.universityId!,
+          _offset,
+          _limit,
+          searchQuery: _searchText,
         );
-        _applyFilter();
+        if (mounted) {
+          setState(() {
+            _allClubs = newClubs;
+            // Gelen kulüp sayısı limitimize eşitse "daha fazla var" demektir.
+            _hasMore = newClubs.length == _limit;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Kulüpler yüklenemedi: $e")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kulüpler yüklenemedi: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _onSearchChanged() {
-    setState(() {
-      _searchText = _searchController.text;
-      _applyFilter();
-    });
-  }
-
-  void _applyFilter() {
-    if (_searchText.isEmpty) {
-      _filteredClubs = _allClubs;
-    } else {
-      final searchLower = _searchText.toLowerCase();
-      _filteredClubs = _allClubs.where((club) {
-        return club.name.toLowerCase().contains(searchLower) ||
-            club.description.toLowerCase().contains(searchLower) ||
-            club.tags.any((tag) => tag.toLowerCase().contains(searchLower));
-      }).toList();
+  // SIRADAKİ 10 KULÜBÜ ÇEKEN FONKSİYON
+  Future<void> _loadMoreData() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    
+    try {
+      _offset += _limit;
+      final moreClubs = await _dbService.getDiscoverableClubsPaginated(
+        _profile!.id,
+        _profile!.universityId!,
+        _offset,
+        _limit,
+        searchQuery: _searchText,
+      );
+      if (mounted) {
+        setState(() {
+          _allClubs.addAll(moreClubs);
+          _hasMore = moreClubs.length == _limit;
+        });
+      }
+    } catch (e) {
+      _offset -= _limit; // Hata olursa offset'i geri al
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -143,6 +191,8 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -210,34 +260,48 @@ class _DiscoverClubsTabState extends State<DiscoverClubsTab> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
               child: AuraSearchField(
                 controller: _searchController,
-                hintText: "İlgi alanına göre ara...",
-                onChanged: (_) => _onSearchChanged(),
+                hintText: "İlgi alanına veya isme göre ara...",
+                onChanged: (val) => _onSearchChanged(val),
               ),
             ),
 
-          // --- CLUB LIST ---
+          // --- CLUB LIST / EVENTS ---
           Expanded(
             child: _selected == 0
                 ? (_isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _filteredClubs.isEmpty
+                    ? const Center(child: CircularProgressIndicator(color: AuraTheme.kAccentCyan))
+                    : _allClubs.isEmpty
                         ? _buildEmptyState(_searchText.isNotEmpty
-                            ? "Sonuç bulunamadı."
+                            ? "Aramana uygun sonuç bulunamadı."
                             : "Okulundaki tüm kulüplere üyesin! 🎉")
-                        : AuraPullToRefresh(
-                            onRefresh: _loadInitialData,
+                        : RefreshIndicator(
+                            color: AuraTheme.kAccentCyan,
+                            backgroundColor: const Color(0xFF1E1E1E),
+                            onRefresh: _loadInitialData, // Sadece yukarıdan çekince yeniler
                             child: ListView.builder(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(24, 10, 24, 100),
-                              itemCount: _filteredClubs.length,
+                              itemCount: _allClubs.length + (_hasMore ? 1 : 0),
                               itemBuilder: (context, index) {
-                                final club = _filteredClubs[index];
+                                // Eğer son elemandaysak ve daha fazlası varsa yükleme çemberi göster
+                                if (index == _allClubs.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 20),
+                                    child: Center(child: CircularProgressIndicator(color: AuraTheme.kAccentCyan)),
+                                  );
+                                }
+                                final club = _allClubs[index];
                                 return _buildAuraClubCard(context, club);
                               },
                             ),
                           ))
-                : AuraPullToRefresh(
-                    onRefresh: _loadEvents,
+                : RefreshIndicator(
+                    color: AuraTheme.kAccentCyan,
+                    backgroundColor: const Color(0xFF1E1E1E),
+                    onRefresh: _loadEvents, // Sadece yukarıdan çekince yeniler
                     child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
                         SliverToBoxAdapter(
                           child: Padding(

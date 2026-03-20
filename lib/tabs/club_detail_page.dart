@@ -78,7 +78,7 @@ class _ClubDetailPageState extends State<ClubDetailPage> with SingleTickerProvid
       await Supabase.instance.client.from('club_members').insert({
         'club_id': widget.club.id,
         'user_id': user.id,
-        'role': 'member',
+        'role': 'uye',
         'status': 'pending',
         'joined_at': DateTime.now().toIso8601String(),
       });

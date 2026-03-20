@@ -7,10 +7,21 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// --- BURASI EKSİKTİ, EKLEDİM ---
+val localProperties = Properties()
+val localPropertiesFile = rootProject.projectDir.resolve("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.0"
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+// ------------------------------
+
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
 android {
@@ -31,22 +42,24 @@ android {
         applicationId = "com.emrecan.cepkampus"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // Alttaki iki satırı da düzelttim, direkt yukarıdaki değişkenleri kullanacak
+        versionCode = flutterVersionCode.toInt()
+        versionName = flutterVersionName
     }
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            // localProperties hatası veren yer burasıydı, artık yukarıda tanımlı olduğu için hata vermeyecek
             storeFile = if (keystoreProperties["storeFile"] != null) file(keystoreProperties["storeFile"] as String) else null
-            storePassword = keystoreProperties["storePassword"] as String
+            storePassword = keystoreProperties["storePassword"] as String?
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
         }
     }
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            // signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             isShrinkResources = false
         }
