@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:kulupi/main_hub.dart';
 import 'package:kulupi/register_modern.dart';
 import 'package:kulupi/utils/glass_components.dart';
 import 'package:kulupi/services/auth_service.dart';

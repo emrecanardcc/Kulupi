@@ -5,12 +5,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kulupi/login.dart'; 
 import 'package:kulupi/main_hub.dart';
 import 'package:kulupi/web_admin/web_admin_dashboard.dart'; 
+import 'package:kulupi/web_landing_page.dart'; // Yeni vitrin sayfamız
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'utils/modern_theme.dart';
-import 'utils/theme_provider.dart';
-import 'package:kulupi/models/profile.dart'; // EKLENDİ
-import 'package:kulupi/services/auth_service.dart'; // EKLENDİ
+import 'package:kulupi/utils/modern_theme.dart';
+import 'package:kulupi/utils/theme_provider.dart';
+import 'package:kulupi/models/profile.dart'; 
+import 'package:kulupi/services/auth_service.dart';
+
+// Eğer kulüp yöneticisi (moderator) paneli dosyan hazırsa aşağıdaki satırın başındaki // işaretini kaldırabilirsin:
+// import 'package:kulupi/web_admin/club_admin_dashboard.dart';
 
 const String supabaseUrl = 'https://kalkeswsmpjlodhwxcfy.supabase.co';
 const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthbGtlc3dzbXBqbG9kaHd4Y2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NDIxNzksImV4cCI6MjA4NjQxODE3OX0.RwbhRHTr612tCY16fzgvA0bQ3RWjHCSWukC_GVfMoRo';
@@ -60,9 +64,6 @@ class MyApp extends StatelessWidget {
           themeMode: themeProvider.themeMode,
           theme: ModernTheme.lightTheme,
           darkTheme: ModernTheme.darkTheme,
-          
-          // GÜVENLİK GÜNCELLEMESİ: kIsWeb kontrolünü kaldırdık. 
-          // Artık herkes (web veya mobil) bakım ve kimlik doğrulama duvarından geçecek.
           home: const MaintenanceWrapper(),
         );
       },
@@ -71,7 +72,7 @@ class MyApp extends StatelessWidget {
 }
 
 // --------------------------------------------------------------------------
-// BAKIM MODU KONTROLCÜSÜ (Canlı Veri Dinler)
+// BAKIM MODU KONTROLCÜSÜ
 // --------------------------------------------------------------------------
 class MaintenanceWrapper extends StatelessWidget {
   const MaintenanceWrapper({super.key});
@@ -128,44 +129,24 @@ class MaintenanceScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.cyanAccent.withValues(alpha: 0.2),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
+                    BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5),
                   ],
                 ),
-                child: const Icon(
-                  Icons.handyman_rounded,
-                  size: 80,
-                  color: Colors.cyanAccent,
-                ),
+                child: const Icon(Icons.handyman_rounded, size: 80, color: Colors.cyanAccent),
               ),
               const SizedBox(height: 40),
               const Text(
                 "SİSTEM BAKIMDA",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2),
               ),
               const SizedBox(height: 16),
               const Text(
                 "Kulüpi'yi senin için daha iyi ve hızlı hale getiriyoruz.\nLütfen kısa bir süre sonra tekrar dene.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                  height: 1.5,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.white70, height: 1.5),
               ),
               const SizedBox(height: 40),
-              const CircularProgressIndicator(
-                color: Colors.cyanAccent,
-                strokeWidth: 2,
-              ),
+              const CircularProgressIndicator(color: Colors.cyanAccent, strokeWidth: 2),
             ],
           ),
         ),
@@ -175,7 +156,7 @@ class MaintenanceScreen extends StatelessWidget {
 }
 
 // --------------------------------------------------------------------------
-// GÜNCELLENMİŞ: ROL BAZLI KULLANICI GİRİŞ KONTROLCÜSÜ
+// ROL BAZLI KULLANICI GİRİŞ KONTROLCÜSÜ (VİTRİN VE MOBİL YÖNLENDİRMELİ)
 // --------------------------------------------------------------------------
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -187,39 +168,57 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFF0F2027),
-            body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+            backgroundColor: Color(0xFF0F2027), 
+            body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
           );
         }
 
         final session = snapshot.data?.session;
         
         if (session != null) {
-          // Kullanıcı giriş yapmış, şimdi Supabase'den Rolünü öğrenelim
+          // Kullanıcı giriş yapmış, Rolünü öğreniyoruz
           return FutureBuilder<Profile?>(
             future: AuthService().getCurrentProfile(),
             builder: (context, profileSnapshot) {
               if (profileSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
-                  backgroundColor: Color(0xFF0F2027),
-                  body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+                  backgroundColor: Color(0xFF0F2027), 
+                  body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
                 );
               }
 
               final profile = profileSnapshot.data;
 
-              // ROL KONTROLÜ: Eğer kullanıcı 'admin' ise VE web'den giriyorsa admin paneli açılsın
+              // 1. ROL: ADMİN İSE (Senin için, web'den giriyorsa admin paneli)
               if (profile != null && profile.role == 'admin' && kIsWeb) {
                 return const WebAdminDashboard();
               }
               
-              // Admin değilse (normal öğrenciyse) veya admin ama mobilden giriyorsa normal hub açılsın
+              // 2. ROL: KULÜP YÖNETİCİSİ İSE (İleride ClubAdminDashboard'u bağlayacağın yer)
+              if (profile != null && profile.role == 'moderator' && kIsWeb) {
+                // Eğer club_admin_dashboard.dart dosyan hazırsa alttaki yorumu kaldırabilirsin
+                // return const ClubAdminDashboard(); 
+              }
+              
+              // 3. ROL: NORMAL ÖĞRENCİ İSE
+              if (kIsWeb) {
+                // Web'den giren öğrenciye Vitrin sayfasını "Giriş Yapılmış" modda aç
+                return const WebLandingPage(isLoggedIn: true);
+              }
+              
+              // EĞER KİŞİ MOBİL UYGULAMADAN GİRİYORSA DİREKT MOBİL HUB'I AÇ
               return const MainHub();
             },
           );
         } else {
-          // Oturum açmamış herkes (web veya mobil) Giriş ekranına yönlendirilir
-          return const GirisEkrani();
+          // KULLANICI GİRİŞ YAPMAMIŞSA
+          if (kIsWeb) {
+            // Cihaz Web tarayıcısı ise yeni vitrin sayfamızı "Giriş Yapılmamış" modda göster
+            return const WebLandingPage(isLoggedIn: false);
+          } else {
+            // Cihaz mobil uygulama ise normal mobil giriş ekranını göster
+            return const GirisEkrani();
+          }
         }
       },
     );

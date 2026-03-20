@@ -703,7 +703,7 @@ class _SponsorManagerState extends State<SponsorManager> {
                                               if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Durum güncellenemedi: $e"), backgroundColor: Colors.red));
                                             }
                                           },
-                                          activeColor: Colors.cyanAccent,
+                                          activeThumbColor: Colors.cyanAccent,
                                         ),
                                       ),
                                       // YENİ: DÜZENLE BUTONU
