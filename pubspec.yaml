@@ -44,5 +44,5 @@ flutter:
   uses-material-design: true
   
   # Görseli uygulamanın içinde de kullanacaksan burayı açabilirsin:
-  # assets:
-  #   - assets/icon.png
+  assets:
+  - assets/logo.png

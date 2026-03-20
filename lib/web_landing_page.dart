@@ -40,109 +40,96 @@ class _WebLandingPageState extends State<WebLandingPage> {
     super.dispose();
   }
 
-  // GİRİŞ YAP POP-UP PENCERESİ
   void _showLoginDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.8), 
-      builder: (BuildContext context) {
-        return const Dialog(
-          backgroundColor: Colors.transparent,
-          child: _LoginModalForm(),
-        );
-      },
+      builder: (BuildContext context) => const Dialog(backgroundColor: Colors.transparent, child: _LoginModalForm()),
     );
   }
 
-  // KAYIT OL POP-UP PENCERESİ
   void _showRegisterDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.8), 
-      builder: (BuildContext context) {
-        return const Dialog(
-          backgroundColor: Colors.transparent,
-          child: _RegisterModalForm(),
-        );
-      },
+      builder: (BuildContext context) => const Dialog(backgroundColor: Colors.transparent, child: _RegisterModalForm()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+
     return Scaffold(
       backgroundColor: const Color(0xFF071013),
       body: Stack(
         children: [
-          // 1. AŞAĞI KAYDIRILABİLEN ANA İÇERİK
           SingleChildScrollView(
             controller: _scrollController,
             child: Column(
               children: [
-                _buildHeroSection(),
-                _buildEventsShowcase(),
+                _buildHeroSection(isMobile),
+                _buildEventsShowcase(isMobile, screenWidth), 
                 const SizedBox(height: 100),
                 const Padding(
                   padding: EdgeInsets.all(24.0),
-                  child: Text("© 2026 Kulüpi - Kampüsün Dijital Kalbi", style: TextStyle(color: Colors.white54)),
+                  child: Text("© 2026 Kulüpi - Kampüsün Dijital Kalbi", style: TextStyle(color: Colors.white54, fontSize: 12)),
                 ),
               ],
             ),
           ),
 
-          // 2. SABİT ÜST MENÜ (NAVBAR)
+          // 2. SABİT ÜST MENÜ (NAVBAR) - LOGO BURADA DEĞİŞTİ
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              height: 80,
-              padding: const EdgeInsets.symmetric(horizontal: 40),
+              height: isMobile ? 70 : 80,
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 40),
               decoration: BoxDecoration(
-                color: _isScrolled ? const Color(0xFF0F2027).withValues(alpha: 0.9) : Colors.transparent,
-                border: Border(
-                  bottom: BorderSide(
-                    color: _isScrolled ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-                  ),
-                ),
+                color: _isScrolled ? const Color(0xFF0F2027).withValues(alpha: 0.95) : Colors.transparent,
+                border: Border(bottom: BorderSide(color: _isScrolled ? Colors.white.withValues(alpha: 0.1) : Colors.transparent)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: AuraTheme.kAccentCyan.withValues(alpha: 0.2)),
-                        child: const Icon(Icons.school_rounded, color: AuraTheme.kAccentCyan),
+                      // LOGO EKLENDİ (İkon kaldırıldı)
+                      Image.asset(
+                        'assets/logo.png', 
+                        width: isMobile ? 32 : 40, 
+                        height: isMobile ? 32 : 40, 
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         "Kulüpi",
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+                        style: TextStyle(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
                       ),
                     ],
                   ),
                   
-                  // Sağ Taraf Butonları
                   if (!widget.isLoggedIn)
                     Row(
                       children: [
                         TextButton(
                           onPressed: () => _showRegisterDialog(context),
-                          child: const Text("Kayıt Ol", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                          child: Text("Kayıt Ol", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 16)),
                         ),
-                        const SizedBox(width: 24),
+                        SizedBox(width: isMobile ? 8 : 24),
                         ElevatedButton(
                           onPressed: () => _showLoginDialog(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AuraTheme.kAccentCyan,
                             foregroundColor: Colors.black,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: isMobile ? 12 : 16),
                           ),
-                          child: const Text("GİRİŞ YAP", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+                          child: Text("GİRİŞ YAP", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: isMobile ? 12 : 14)),
                         ),
                       ],
                     )
@@ -152,8 +139,8 @@ class _WebLandingPageState extends State<WebLandingPage> {
                         await AuthService().signOut();
                         if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthWrapper()));
                       },
-                      icon: const Icon(Icons.logout, size: 18),
-                      label: const Text("ÇIKIŞ YAP"),
+                      icon: Icon(Icons.logout, size: isMobile ? 16 : 18),
+                      label: Text(isMobile ? "ÇIKIŞ" : "ÇIKIŞ YAP", style: TextStyle(fontSize: isMobile ? 12 : 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
                         foregroundColor: Colors.redAccent,
@@ -169,7 +156,7 @@ class _WebLandingPageState extends State<WebLandingPage> {
     );
   }
 
-  Widget _buildHeroSection() {
+  Widget _buildHeroSection(bool isMobile) {
     return Container(
       height: MediaQuery.of(context).size.height,
       width: double.infinity,
@@ -184,51 +171,55 @@ class _WebLandingPageState extends State<WebLandingPage> {
         alignment: Alignment.center,
         children: [
           Container(
-            width: 600,
-            height: 600,
+            width: isMobile ? 300 : 600,
+            height: isMobile ? 300 : 600,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AuraTheme.kAccentCyan.withValues(alpha: 0.05),
               boxShadow: [BoxShadow(color: AuraTheme.kAccentCyan.withValues(alpha: 0.1), blurRadius: 100, spreadRadius: 50)],
             ),
           ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AuraTheme.kAccentCyan.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: AuraTheme.kAccentCyan.withValues(alpha: 0.3)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AuraTheme.kAccentCyan.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: AuraTheme.kAccentCyan.withValues(alpha: 0.3)),
+                  ),
+                  child: Text("🚀 KULÜPİ ARTIK YAYINDA", style: TextStyle(color: AuraTheme.kAccentCyan, fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: isMobile ? 10 : 14)),
                 ),
-                child: const Text("🚀 KULÜPİ ARTIK YAYINDA", style: TextStyle(color: AuraTheme.kAccentCyan, fontWeight: FontWeight.bold, letterSpacing: 1)),
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                "Kampüsün Dijital\nKalbi Atıyor.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 80, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, letterSpacing: -2),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                "Tüm etkinlikler, kulüpler ve duyurular cebinde.\nÜniversite hayatını kaçırma, hemen uygulamamızı indir.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, color: Colors.white.withValues(alpha: 0.6), height: 1.5),
-              ),
-              const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStoreButton(Icons.apple, "App Store'dan", "İndir"),
-                  const SizedBox(width: 16),
-                  _buildStoreButton(Icons.android, "Google Play'den", "İndir"),
-                ],
-              )
-            ],
+                SizedBox(height: isMobile ? 24 : 32),
+                Text(
+                  "Kampüsün Dijital\nKalbi Atıyor.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: isMobile ? 48 : 80, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, letterSpacing: -2),
+                ),
+                SizedBox(height: isMobile ? 16 : 24),
+                Text(
+                  "Tüm etkinlikler, kulüpler ve duyurular cebinde.\nÜniversite hayatını kaçırma, hemen uygulamamızı indir.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: isMobile ? 16 : 20, color: Colors.white.withValues(alpha: 0.6), height: 1.5),
+                ),
+                SizedBox(height: isMobile ? 32 : 40),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _buildStoreButton(Icons.apple, "App Store'dan", "İndir"),
+                    _buildStoreButton(Icons.android, "Google Play'den", "İndir"),
+                  ],
+                )
+              ],
+            ),
           ),
           Positioned(
-            bottom: 40,
+            bottom: isMobile ? 20 : 40,
             child: Column(
               children: [
                 const Text("Keşfet", style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 2)),
@@ -251,6 +242,7 @@ class _WebLandingPageState extends State<WebLandingPage> {
         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: Colors.white, size: 32),
           const SizedBox(width: 12),
@@ -266,36 +258,37 @@ class _WebLandingPageState extends State<WebLandingPage> {
     );
   }
 
-  Widget _buildEventsShowcase() {
+  Widget _buildEventsShowcase(bool isMobile, double screenWidth) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 80),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 40, vertical: isMobile ? 40 : 80),
       color: const Color(0xFF0B171C),
       child: Column(
         children: [
-          const Text(
+          Text(
             "Yaklaşan Etkinlikler",
-            style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: isMobile ? 32 : 40, fontWeight: FontWeight.w900, color: Colors.white),
           ),
           const SizedBox(height: 16),
           Text(
             "Kampüste neler olup bittiğini gör. Etkileşime geçmek için aşağı kaydır!",
-            style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.5)),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: isMobile ? 14 : 18, color: Colors.white.withValues(alpha: 0.5)),
           ),
-          const SizedBox(height: 60),
-          
+          SizedBox(height: isMobile ? 32 : 60),
           Container(
-            height: 800, 
-            width: 1200, 
+            height: isMobile ? 600 : 800, 
+            width: isMobile ? screenWidth * 0.95 : 1200, 
             decoration: BoxDecoration(
               color: const Color(0xFF0F2027),
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(isMobile ? 24 : 32),
               border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 40, offset: const Offset(0, 20))],
             ),
-            child: const ClipRRect(
-              borderRadius: BorderRadius.all(Radius.circular(32)),
-              child: EventsDiscoveryTab(), 
+            child: ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(isMobile ? 24 : 32)),
+              child: const EventsDiscoveryTab(), 
             ),
           ),
         ],
@@ -338,10 +331,12 @@ class _LoginModalFormState extends State<_LoginModalForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 400),
       child: AuraGlassCard(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(isMobile ? 24 : 40),
         accentColor: AuraTheme.kAccentCyan,
         showGlow: true,
         child: Column(
@@ -392,15 +387,12 @@ class _RegisterModalFormState extends State<_RegisterModalForm> {
   final DatabaseService _dbService = DatabaseService();
 
   int _currentStep = 0;
-  
-  // Form kontrolleri
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  // Üniversite bilgileri
   List<University> _universities = [];
   University? _selectedUniversity;
   List<Faculty> _faculties = [];
@@ -408,7 +400,6 @@ class _RegisterModalFormState extends State<_RegisterModalForm> {
   List<Department> _departments = [];
   Department? _selectedDepartment;
 
-  // Diğer bilgiler
   DateTime? _birthDate;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -461,9 +452,7 @@ class _RegisterModalFormState extends State<_RegisterModalForm> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AuraTheme.kAccentCyan, onPrimary: Colors.black, surface: Color(0xFF2C5364), onSurface: Colors.white,
-            ),
+            colorScheme: const ColorScheme.dark(primary: AuraTheme.kAccentCyan, onPrimary: Colors.black, surface: Color(0xFF2C5364), onSurface: Colors.white),
           ),
           child: child!,
         );
@@ -530,10 +519,12 @@ class _RegisterModalFormState extends State<_RegisterModalForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 450, maxHeight: 800), 
       child: AuraGlassCard(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(isMobile ? 20 : 32),
         accentColor: AuraTheme.kAccentCyan,
         showGlow: true,
         child: Column(
@@ -565,13 +556,19 @@ class _RegisterModalFormState extends State<_RegisterModalForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (_currentStep == 0) ...[
-                      Row(
-                        children: [
-                          Expanded(child: AuraGlassTextField(controller: _firstNameController, hintText: "İsim", icon: Icons.person_outline)),
-                          const SizedBox(width: 12),
-                          Expanded(child: AuraGlassTextField(controller: _lastNameController, hintText: "Soyisim", icon: Icons.badge_outlined)),
-                        ],
-                      ),
+                      if (isMobile) ...[
+                        AuraGlassTextField(controller: _firstNameController, hintText: "İsim", icon: Icons.person_outline),
+                        const SizedBox(height: 12),
+                        AuraGlassTextField(controller: _lastNameController, hintText: "Soyisim", icon: Icons.badge_outlined),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(child: AuraGlassTextField(controller: _firstNameController, hintText: "İsim", icon: Icons.person_outline)),
+                            const SizedBox(width: 12),
+                            Expanded(child: AuraGlassTextField(controller: _lastNameController, hintText: "Soyisim", icon: Icons.badge_outlined)),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       AuraGlassTextField(controller: _emailController, hintText: "Email Adresi", keyboardType: TextInputType.emailAddress, icon: Icons.alternate_email),
                       const SizedBox(height: 16),
